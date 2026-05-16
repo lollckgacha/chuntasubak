@@ -1017,25 +1017,20 @@
             }
         }
 
-        // 매 게임마다 마지막 11단계를 제외하고 0~10단계를 무작위 셔플
+        // 매 게임마다 모든 멤버(0~11단계)를 무작위 셔플
         function shuffleMembersForGame() {
-            const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
             for (let i = indices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [indices[i], indices[j]] = [indices[j], indices[i]];
             }
             
-            for (let i = 0; i < 11; i++) {
+            for (let i = 0; i < 12; i++) {
                 const randomIdx = indices[i];
                 MEMBERS_DATA[i].name = BASE_MEMBERS_DATA[randomIdx].name;
                 MEMBERS_DATA[i].file = BASE_MEMBERS_DATA[randomIdx].file;
                 MEMBERS_DATA[i].color = BASE_MEMBERS_DATA[randomIdx].color;
             }
-            
-            // 11(마지막 단계, 천양)은 항상 고정
-            MEMBERS_DATA[11].name = BASE_MEMBERS_DATA[11].name;
-            MEMBERS_DATA[11].file = BASE_MEMBERS_DATA[11].file;
-            MEMBERS_DATA[11].color = BASE_MEMBERS_DATA[11].color;
 
             // 셔플된 결과를 바탕으로 진화 순서 UI 재구축
             buildEvolutionGuide();
