@@ -97,10 +97,12 @@
 
         .pc-mode {
             display: flex; flex-direction: row; align-items: center; justify-content: center;
-            gap: 1.5vw; width: 100%; height: 100%; padding: 2vh 2vw;
+            /* 패널들 사이의 간격을 대폭 줄여 밀착시킵니다. */
+            gap: 1vw; width: 100%; height: 100%; padding: 2vh 2vw;
         }
         .pc-mode .game-wrapper {
-            flex: 1; min-width: 0; min-height: 0; height: 100%;
+            /* 중앙 게임 영역이 필요 이상의 가로 공간을 차지하지 않고 딱 맞게 줄어들도록 수정 */
+            flex: 0 0 auto; min-width: 0; min-height: 0; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         
