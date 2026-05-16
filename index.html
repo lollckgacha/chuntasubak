@@ -314,6 +314,32 @@
         </div>
     </div>
 
+    <!-- 게임 시작 전 효과음 선택 모달 -->
+    <div id="sfxSelectModal" class="hidden fixed inset-0 bg-black/80 z-[150000] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-8 w-full max-w-md text-center">
+            <h2 class="text-3xl suika-font-black text-[#acfef8] mb-4 border-b border-[rgba(255,255,255,0.1)] pb-4">효과음 선택</h2>
+            <p class="text-gray-300 suika-font mb-6 break-keep">게임에서 사용할 효과음을 선택해주세요.<br>(설정에서 언제든 변경 가능합니다)</p>
+            
+            <div class="flex gap-2 mb-6">
+                <label class="flex-1 relative">
+                    <input type="radio" name="initSfxType" value="default" class="sr-only peer">
+                    <div class="py-3 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all">기본 효과음</div>
+                </label>
+                <label class="flex-1 relative">
+                    <input type="radio" name="initSfxType" value="member" class="sr-only peer" checked>
+                    <div class="py-3 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all">멤버 효과음</div>
+                </label>
+            </div>
+            
+            <div class="flex items-center justify-center gap-2 mb-6 text-gray-400 suika-font text-sm">
+                <input type="checkbox" id="dontShowSfxModal" class="w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-[#acfef8] focus:ring-2">
+                <label for="dontShowSfxModal" class="cursor-pointer">다시 보지 않음</label>
+            </div>
+
+            <button onclick="confirmStartGame()" class="suika-btn suika-btn-primary w-full py-4 text-xl suika-font-black">게임 시작하기</button>
+        </div>
+    </div>
+
     <!-- 설정 모달 -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 z-[100000] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="suika-panel p-8 w-full max-w-md text-center">
@@ -345,7 +371,6 @@
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">기본 효과음</div>
                     </label>
                     <label class="flex-1 relative">
-                        <!-- 멤버 효과음을 기본값(checked)으로 설정 -->
                         <input type="radio" name="sfxType" value="member" class="sr-only peer" checked onchange="changeSfxType('member')">
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">멤버 효과음</div>
                     </label>
@@ -542,7 +567,6 @@
         let bgm = null;
         let isBgmMuted = false;
         let isSfxMuted = false;
-        // 기본값을 'member'로 변경
         let sfxType = 'member'; 
         let bgmVolume = 0.5;
         let sfxVolume = 0.7;
@@ -556,7 +580,6 @@
             const btnMobile = document.getElementById('btnMobile');
             const layoutContainer = document.getElementById('layoutContainer');
 
-            // layoutContainer.className에 바로 넣지 않고 모드 클래스만 교체 (게임 활성화 상태 보존)
             layoutContainer.classList.remove('pc-mode', 'mobile-mode');
             
             if (mode === 'pc') {
@@ -571,13 +594,11 @@
                 layoutContainer.classList.add('mobile-mode');
             }
             
-            // 모드가 변경되면 캔버스 크기를 다시 조정
             handleResize();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const layoutContainer = document.getElementById('layoutContainer');
-            // 초기 접속 시 게임 숨김
             layoutContainer.classList.remove('game-active'); 
             setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
             window.addEventListener('resize', handleResize);
@@ -596,10 +617,38 @@
             }
             bgm.play().catch(e => console.log('BGM Play failed:', e));
             
-            // 게임 시작 로직: 로딩 오버레이 가리고, 게임 컨테이너 활성화
+            // "다시 보지 않음" 처리 로직 확인
+            const hideModal = localStorage.getItem('chunta_suika_hide_sfx_modal') === 'true';
+            
+            if (hideModal) {
+                proceedToGame(); // 모달 생략하고 바로 게임 진입
+            } else {
+                // 게임 시작 버튼을 누르면 효과음 선택 모달을 띄움
+                document.getElementById('sfxSelectModal').classList.remove('hidden');
+            }
+        }
+
+        function confirmStartGame() {
+            // 사용자가 선택한 라디오 버튼 값 가져오기
+            const selectedSfx = document.querySelector('input[name="initSfxType"]:checked').value;
+            sfxType = selectedSfx;
+            
+            // 설정창 내부의 라디오 버튼 상태도 동기화
+            document.querySelector(`input[name="sfxType"][value="${selectedSfx}"]`).checked = true;
+
+            // '다시 보지 않음' 체크 상태 저장
+            const dontShow = document.getElementById('dontShowSfxModal').checked;
+            if (dontShow) {
+                localStorage.setItem('chunta_suika_hide_sfx_modal', 'true');
+            }
+
+            document.getElementById('sfxSelectModal').classList.add('hidden');
+            proceedToGame();
+        }
+
+        function proceedToGame() {
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('layoutContainer').classList.add('game-active');
-            
             startGame();
         }
 
@@ -623,6 +672,7 @@
             if (sfxType === 'member') {
                 if (type === 'drop' && level <= 2) {
                     if (memberAudios[level]) {
+                        console.log(`[효과음] 떨어짐: ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
                         const a = memberAudios[level].cloneNode();
                         a.volume = sfxVolume;
                         a.play().catch(e => console.log('Custom Drop audio play failed:', e));
@@ -632,6 +682,8 @@
                 
                 if (type === 'merge' || type === 'merge_max') {
                     if (memberAudios[level]) {
+                        // 합쳐졌을 때 '새롭게 생성된' 다음 단계 과일의 음성이 출력됨을 콘솔로 확인 가능합니다.
+                        console.log(`[효과음] 합쳐짐(생성): ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
                         const a = memberAudios[level].cloneNode();
                         a.volume = sfxVolume;
                         a.play().catch(e => console.log('Custom Merge audio play failed:', e));
@@ -769,7 +821,6 @@
         }
 
         function returnToMenu() {
-            // 모달 모두 닫기
             document.getElementById('quitConfirmModal').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.remove('active');
             
@@ -779,7 +830,6 @@
             
             if(bgm) { bgm.pause(); bgm.currentTime = 0; }
 
-            // 게임 화면 숨기고 홈 화면 다시 표시
             document.getElementById('layoutContainer').classList.remove('game-active');
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
@@ -847,7 +897,6 @@
                 ctx.imageSmoothingQuality = 'high';
             }
 
-            // 모바일 넥스트 캔버스 리사이즈
             if (nextCanvas && nextCanvas.width !== 120 * newDpr) {
                 nextCanvas.width = 120 * newDpr;
                 nextCanvas.height = 120 * newDpr;
@@ -857,7 +906,6 @@
                 nextCtx.imageSmoothingQuality = 'high';
             }
 
-            // PC 넥스트 캔버스 리사이즈
             if (nextCanvasPC && nextCanvasPC.width !== 120 * newDpr) {
                 nextCanvasPC.width = 120 * newDpr;
                 nextCanvasPC.height = 120 * newDpr;
@@ -886,14 +934,12 @@
             buildEvolutionGuide();
             preloadImages();
 
-            // 최고점수 초기 세팅
             const pcBest = document.getElementById('pc-bestScoreDisplay');
             if(pcBest) pcBest.innerText = bestScore;
         }
 
         function preloadImages() {
             MEMBERS_DATA.forEach((member) => {
-                // 1. 이미지 로드
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.onload = () => {
@@ -907,8 +953,6 @@
                 img.src = baseUrl + member.file;
                 images[member.level] = img;
                 
-                // 2. 효과음 로드
-                // 제공된 깃허브 주소를 raw 주소로 변환하여 적용 (blob 주소는 오디오 재생이 안 됨)
                 const audioFile = member.file.replace('.jpg', '.mp3');
                 const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioFile}`;
                 
@@ -983,7 +1027,6 @@
             canDrop = true;
             gamePaused = false;
 
-            // 게임 시작 시, 컨테이너 배경에 테스트용 랜덤 이미지를 적용
             if (BACKGROUND_IMAGES && BACKGROUND_IMAGES.length > 0) {
                 const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
                 const container = document.getElementById('game-container');
@@ -1001,7 +1044,7 @@
             }
 
             engine = Engine.create({
-                positionIterations: 24, // 연산 정밀도 극대화 (겹침 및 덜덜거림 방지)
+                positionIterations: 24,
                 velocityIterations: 16
             });
             world = engine.world;
@@ -1105,10 +1148,10 @@
             playSound('drop', currentLevel);
             
             const body = Bodies.circle(currentBody.x, currentBody.y, currentBody.radius, {
-                restitution: 0.1,        // 아주 미세한 탄성 부여하여 충격 에너지 분산
-                friction: 0.01,          // 마찰력을 소폭 증가시켜 과도하게 계속 미끄러지는 현상 방지
+                restitution: 0.1,        
+                friction: 0.01,          
                 frictionAir: 0.01,
-                density: 0.001 * Math.pow(1.2, currentLevel), // 과일 간 무게 차이 완화 (안정성 증가)
+                density: 0.001 * Math.pow(1.2, currentLevel), 
                 slop: 0.05,             
                 label: 'member',
                 level: currentBody.level,
@@ -1140,6 +1183,7 @@
                     bodyA.isMerging = true;
                     bodyB.isMerging = true;
 
+                    // newLevel은 합쳐져서 새롭게 만들어진 '다음 단계'의 과일 레벨입니다.
                     const newLevel = bodyA.level + 1;
                     const midX = (bodyA.position.x + bodyB.position.x) / 2;
                     const midY = (bodyA.position.y + bodyB.position.y) / 2;
@@ -1150,7 +1194,7 @@
                         restitution: 0.1,
                         friction: 0.01,
                         frictionAir: 0.01,
-                        density: 0.001 * Math.pow(1.2, newLevel), // 과일 간 무게 차이 완화
+                        density: 0.001 * Math.pow(1.2, newLevel), 
                         slop: 0.05,
                         label: 'member',
                         level: newLevel,
@@ -1164,6 +1208,7 @@
                     addScore(MEMBERS_DATA[newLevel].score);
                     createPopEffect(midX, midY, newLevel);
 
+                    // 새로 생성된 '다음 단계 과일'의 레벨(newLevel)을 넘겨주어 해당 과일의 음성을 재생시킵니다.
                     if (newLevel === MEMBERS_DATA.length - 1) {
                         playSound('merge_max', newLevel);
                     } else {
@@ -1184,11 +1229,9 @@
         }
 
         function updateScore() {
-            // 모바일 뷰 점수 업데이트
             const mobileScoreDisplay = document.getElementById('scoreDisplay');
             if(mobileScoreDisplay) mobileScoreDisplay.innerText = score;
             
-            // PC 뷰 점수 업데이트
             const pcScoreDisplay = document.getElementById('pc-scoreDisplay');
             if(pcScoreDisplay) pcScoreDisplay.innerText = score;
             
@@ -1260,7 +1303,6 @@
             }
 
             if (currentBody && !isGameOver) {
-                // 투명도 설정 제거하여 100% 선명하게 렌더링
                 drawMember(ctx, currentBody.x, currentBody.y, 0, currentBody.level);
 
                 ctx.beginPath();
@@ -1328,7 +1370,6 @@
         }
 
         function drawNextItem() {
-            // 모바일과 PC 양쪽 캔버스에 모두 그려줌 (화면에 보이는 것만 렌더링됨)
             [nextCtx, nextCtxPC].forEach(c => {
                 if(!c) return;
                 
