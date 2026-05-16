@@ -542,19 +542,22 @@
         ];
 
         // 베이스 멤버 고유 속성 (섞일 데이터)
+        // [중요!] sfxCount를 늘리면 자동으로 03_1.mp3, 03_2.mp3 등 랜덤으로 불러옵니다.
+        // 현재는 모두 1개로 설정되어 있지만 나중에 언제든 원하는 멤버의 숫자를 올려주시면 됩니다.
+        // 게임 내에서 과일이 합쳐질 때마다 이 숫자 범위 내에서 매번 새롭게 무작위(랜덤)로 뽑혀서 재생됩니다.
         const BASE_MEMBERS_DATA = [
-            { name: '김웰로', file: '09.jpg', color: '#BFEF90' },
-            { name: '나나문', file: '03.jpg', color: '#F4F6FF' },
-            { name: '달타', file: '11.jpg', color: '#FFC462' },
-            { name: '마다옴', file: '02.jpg', color: '#FFF5C3' },
-            { name: '모카', file: '10.jpg', color: '#5E8EFF' },
-            { name: '문모모', file: '05.jpg', color: '#A868FB' },
-            { name: '임하밍', file: '04.jpg', color: '#F8DBFF' },
-            { name: '카푸', file: '07.jpg', color: '#FFCFB7' },
-            { name: '캬앙', file: '08.jpg', color: '#FF5A4D' },
-            { name: '파니', file: '12.jpg', color: '#9FC5E8' },
-            { name: '한아밍', file: '06.jpg', color: '#FEC0C2' },
-            { name: '천양', file: '01.jpg', color: '#43EAF6' }
+            { name: '김웰로', file: '09.jpg', color: '#BFEF90', sfxCount: 1 },
+            { name: '나나문', file: '03.jpg', color: '#F4F6FF', sfxCount: 1 },
+            { name: '달타', file: '11.jpg', color: '#FFC462', sfxCount: 1 },
+            { name: '마다옴', file: '02.jpg', color: '#FFF5C3', sfxCount: 1 },
+            { name: '모카', file: '10.jpg', color: '#5E8EFF', sfxCount: 1 },
+            { name: '문모모', file: '05.jpg', color: '#A868FB', sfxCount: 1 },
+            { name: '임하밍', file: '04.jpg', color: '#F8DBFF', sfxCount: 1 },
+            { name: '카푸', file: '07.jpg', color: '#FFCFB7', sfxCount: 1 },
+            { name: '캬앙', file: '08.jpg', color: '#FF5A4D', sfxCount: 1 },
+            { name: '파니', file: '12.jpg', color: '#9FC5E8', sfxCount: 1 },
+            { name: '한아밍', file: '06.jpg', color: '#FEC0C2', sfxCount: 1 },
+            { name: '천양', file: '01.jpg', color: '#43EAF6', sfxCount: 1 }
         ];
 
         // 스테이지 공통 속성 (절대 섞이지 않고 크기/점수 역할만 함)
@@ -578,7 +581,8 @@
             ...stage,
             name: BASE_MEMBERS_DATA[i].name,
             file: BASE_MEMBERS_DATA[i].file,
-            color: BASE_MEMBERS_DATA[i].color
+            color: BASE_MEMBERS_DATA[i].color,
+            sfxCount: BASE_MEMBERS_DATA[i].sfxCount
         }));
 
         const images = {};
@@ -707,35 +711,29 @@
             const currentMemberFile = MEMBERS_DATA[level].file;
 
             if (sfxType === 'member') {
-                if (type === 'drop') { 
-                    if (memberAudios[currentMemberFile]) {
-                        if (currentSfxAudio) {
-                            currentSfxAudio.pause();
-                            currentSfxAudio.currentTime = 0;
-                        }
-                        console.log(`[효과음] 떨어짐: ${MEMBERS_DATA[level].name}`);
-                        currentSfxAudio = memberAudios[currentMemberFile].cloneNode();
-                        currentSfxAudio.volume = sfxVolume;
-                        currentSfxAudio.play().catch(e => console.log('Drop audio play failed:', e));
-                    }
-                    return; 
-                }
+                const audios = memberAudios[currentMemberFile]; // 다수의 랜덤 효과음 배열
                 
-                if (type === 'merge' || type === 'merge_max') {
-                    if (memberAudios[currentMemberFile]) {
-                        if (currentSfxAudio) {
-                            currentSfxAudio.pause();
-                            currentSfxAudio.currentTime = 0;
-                        }
-                        console.log(`[효과음] 합쳐짐: ${MEMBERS_DATA[level].name}`);
-                        currentSfxAudio = memberAudios[currentMemberFile].cloneNode();
-                        currentSfxAudio.volume = sfxVolume;
-                        currentSfxAudio.play().catch(e => console.log('Merge audio play failed:', e));
+                if (audios && audios.length > 0) {
+                    if (currentSfxAudio) {
+                        currentSfxAudio.pause();
+                        currentSfxAudio.currentTime = 0;
                     }
-                    if (type === 'merge') return; 
+                    
+                    // [핵심 로직] 이 함수가 실행되는 '매 순간(충돌 시점)'마다 랜덤으로 인덱스를 새롭게 뽑습니다!
+                    const randomIndex = Math.floor(Math.random() * audios.length);
+                    const actionName = (type === 'drop') ? '떨어짐' : '합쳐짐';
+                    
+                    console.log(`[효과음] ${actionName}: ${MEMBERS_DATA[level].name} (총 ${audios.length}개 중 매번 새롭게 ${randomIndex + 1}번째 소리 랜덤 당첨!)`);
+                    
+                    currentSfxAudio = audios[randomIndex].cloneNode();
+                    currentSfxAudio.volume = sfxVolume;
+                    currentSfxAudio.play().catch(e => console.log('Audio play failed:', e));
+                    
+                    return; 
                 }
             }
 
+            // 기본 효과음 재생 로직
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -999,12 +997,26 @@
                 img.src = baseUrl + member.file;
                 images[member.file] = img; // 고유 file 이름으로 저장
                 
-                const audioFile = member.file.replace('.jpg', '.mp3');
-                const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioFile}`;
+                // 다수의 효과음을 저장할 배열 초기화
+                memberAudios[member.file] = [];
+                const sfxCount = member.sfxCount || 1;
+                const audioBaseName = member.file.replace('.jpg', '');
                 
-                const audio = new Audio(customAudioUrl);
-                audio.preload = 'auto'; 
-                memberAudios[member.file] = audio; // 고유 file 이름으로 저장
+                if (sfxCount === 1) {
+                    // 효과음이 1개면 기존처럼 03.mp3 형식으로 불러옴
+                    const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioBaseName}.mp3`;
+                    const audio = new Audio(customAudioUrl);
+                    audio.preload = 'auto'; 
+                    memberAudios[member.file].push(audio);
+                } else {
+                    // 효과음이 여러 개(sfxCount: 3 등)면 03_1.mp3, 03_2.mp3 형식으로 불러옴
+                    for (let k = 1; k <= sfxCount; k++) {
+                        const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioBaseName}_${k}.mp3`;
+                        const audio = new Audio(customAudioUrl);
+                        audio.preload = 'auto'; 
+                        memberAudios[member.file].push(audio);
+                    }
+                }
             });
         }
 
@@ -1032,6 +1044,7 @@
                 MEMBERS_DATA[i].name = BASE_MEMBERS_DATA[randomIdx].name;
                 MEMBERS_DATA[i].file = BASE_MEMBERS_DATA[randomIdx].file;
                 MEMBERS_DATA[i].color = BASE_MEMBERS_DATA[randomIdx].color;
+                MEMBERS_DATA[i].sfxCount = BASE_MEMBERS_DATA[randomIdx].sfxCount;
             }
 
             // 셔플된 결과를 바탕으로 진화 순서 UI 재구축
@@ -1111,8 +1124,8 @@
             // --- 엔진/월드 중복 누수 방지 및 깨끗한 리셋 ---
             if (!engine) {
                 engine = Engine.create({
-                    positionIterations: 32, // 덜덜거림 방지: 연산 정밀도를 더 높임 (24 -> 32)
-                    velocityIterations: 24  // 속도 연산 정밀도 높임 (16 -> 24)
+                    positionIterations: 32, 
+                    velocityIterations: 24
                 });
                 world = engine.world;
                 engine.gravity.y = 2.0;
@@ -1226,11 +1239,11 @@
             playSound('drop', currentLevel);
             
             const body = Bodies.circle(currentBody.x, currentBody.y, currentBody.radius, {
-                restitution: 0.02,       // 덜덜거림 방지: 탄성을 거의 0에 가깝게 줄임 (0.1 -> 0.02)
-                friction: 0.02,          // 마찰력 약간 증가 (0.01 -> 0.02)
+                restitution: 0.02,        
+                friction: 0.02,          
                 frictionAir: 0.01,
-                density: 0.001 * Math.pow(1.1, currentLevel), // 덜덜거림 방지: 무게 편차 감소 (1.2 -> 1.1)
-                slop: 0.1,               // 덜덜거림 방지: 겹침 허용치 증가 (0.05 -> 0.1)
+                density: 0.001 * Math.pow(1.1, currentLevel), 
+                slop: 0.1,             
                 label: 'member',
                 level: currentBody.level,
                 plugin: { createdAt: Date.now() }
@@ -1271,11 +1284,11 @@
                     World.remove(world, [bodyA, bodyB]);
 
                     const newBody = Bodies.circle(midX, midY, MEMBERS_DATA[newLevel].radius, {
-                        restitution: 0.02,       // 덜덜거림 방지: 탄성을 거의 0에 가깝게 줄임
-                        friction: 0.02,          
+                        restitution: 0.02,
+                        friction: 0.02,
                         frictionAir: 0.01,
-                        density: 0.001 * Math.pow(1.1, newLevel), // 덜덜거림 방지: 무게 편차 감소
-                        slop: 0.1,               // 덜덜거림 방지: 겹침 허용치 증가
+                        density: 0.001 * Math.pow(1.1, newLevel), 
+                        slop: 0.1,
                         label: 'member',
                         level: newLevel,
                         plugin: { createdAt: Date.now() }
