@@ -576,6 +576,9 @@
         let sfxVolume = 0.7;
         let gamePaused = false;
         let currentLayout = 'pc';
+        
+        // 현재 재생 중인 멤버 효과음을 추적하는 변수 (겹침 방지용)
+        let currentSfxAudio = null;
 
         function setLayoutMode(mode) {
             currentLayout = mode;
@@ -682,21 +685,31 @@
             if (sfxType === 'member') {
                 if (type === 'drop') { // drop일 때는 무조건 level === 0 (위에서 예외처리됨)
                     if (memberAudios[level]) {
+                        // 기존 소리 즉시 정지 (겹침 방지)
+                        if (currentSfxAudio) {
+                            currentSfxAudio.pause();
+                            currentSfxAudio.currentTime = 0;
+                        }
                         console.log(`[효과음] 떨어짐: ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
-                        const a = memberAudios[level].cloneNode();
-                        a.volume = sfxVolume;
-                        a.play().catch(e => console.log('Custom Drop audio play failed:', e));
+                        currentSfxAudio = memberAudios[level].cloneNode();
+                        currentSfxAudio.volume = sfxVolume;
+                        currentSfxAudio.play().catch(e => console.log('Custom Drop audio play failed:', e));
                     }
                     return; 
                 }
                 
                 if (type === 'merge' || type === 'merge_max') {
                     if (memberAudios[level]) {
+                        // 기존 소리 즉시 정지 (겹침 방지)
+                        if (currentSfxAudio) {
+                            currentSfxAudio.pause();
+                            currentSfxAudio.currentTime = 0;
+                        }
                         // 합쳐졌을 때 '새롭게 생성된' 다음 단계 과일의 음성이 출력됨을 콘솔로 확인 가능합니다.
                         console.log(`[효과음] 합쳐짐(생성): ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
-                        const a = memberAudios[level].cloneNode();
-                        a.volume = sfxVolume;
-                        a.play().catch(e => console.log('Custom Merge audio play failed:', e));
+                        currentSfxAudio = memberAudios[level].cloneNode();
+                        currentSfxAudio.volume = sfxVolume;
+                        currentSfxAudio.play().catch(e => console.log('Custom Merge audio play failed:', e));
                     }
                     if (type === 'merge') return; 
                 }
