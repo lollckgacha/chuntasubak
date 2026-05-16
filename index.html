@@ -371,7 +371,6 @@
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">기본 효과음</div>
                     </label>
                     <label class="flex-1 relative">
-                        <!-- 멤버 효과음을 기본값(checked)으로 설정 -->
                         <input type="radio" name="sfxType" value="member" class="sr-only peer" checked onchange="changeSfxType('member')">
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">멤버 효과음</div>
                     </label>
@@ -611,6 +610,7 @@
         let gamePaused = false;
         let currentLayout = 'pc';
         let currentSfxAudio = null;
+        let isRenderLoopRunning = false; // 루프 중복 방지 변수
 
         function setLayoutMode(mode) {
             currentLayout = mode;
@@ -790,16 +790,13 @@
 
         function openSettings() {
             gamePaused = true;
-            if (typeof runner !== 'undefined' && runner) Runner.stop(runner); 
             document.getElementById('settingsModal').classList.remove('hidden');
         }
 
         function closeSettings() {
             document.getElementById('settingsModal').classList.add('hidden');
             gamePaused = false;
-            if (typeof runner !== 'undefined' && runner && engine && document.getElementById('loadingOverlay').style.display === 'none') {
-                Runner.run(runner, engine);
-            }
+            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
         }
 
         function openRecords() {
@@ -842,40 +839,40 @@
         function openGuide() {
             if(currentLayout === 'pc') return; 
             gamePaused = true;
-            if (typeof runner !== 'undefined' && runner) Runner.stop(runner); 
             document.getElementById('guideModal').classList.remove('hidden');
         }
 
         function closeGuide() {
             document.getElementById('guideModal').classList.add('hidden');
             gamePaused = false;
-            if (typeof runner !== 'undefined' && runner && engine && document.getElementById('loadingOverlay').style.display === 'none') {
-                Runner.run(runner, engine);
-            }
+            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
         }
 
         function openQuitConfirm() {
             gamePaused = true;
-            if (typeof runner !== 'undefined' && runner) Runner.stop(runner); 
             document.getElementById('quitConfirmModal').classList.remove('hidden');
         }
 
         function closeQuitConfirm() {
             document.getElementById('quitConfirmModal').classList.add('hidden');
             gamePaused = false;
-            if (typeof runner !== 'undefined' && runner && engine) Runner.run(runner, engine);
+            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
         }
 
         function returnToMenu() {
+            // 모달 모두 닫기
             document.getElementById('quitConfirmModal').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.remove('active');
             
             gamePaused = true;
-            if (typeof runner !== 'undefined' && runner) Runner.stop(runner);
-            if (animFrameId) cancelAnimationFrame(animFrameId);
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                isRenderLoopRunning = false;
+            }
             
             if(bgm) { bgm.pause(); bgm.currentTime = 0; }
 
+            // 게임 화면 숨기고 홈 화면 다시 표시
             document.getElementById('layoutContainer').classList.remove('game-active');
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
@@ -907,13 +904,12 @@
 
         const Engine = Matter.Engine,
               Render = Matter.Render,
-              Runner = Matter.Runner,
               Bodies = Matter.Bodies,
               World = Matter.World,
               Events = Matter.Events,
               Composite = Matter.Composite;
 
-        let engine, world, runner;
+        let engine, world; // runner 제거
         const GAME_WIDTH = 500;
         const GAME_HEIGHT = 700;
         const WALL_THICKNESS = 60;
@@ -928,6 +924,11 @@
         let canDrop = true;
         let dropCooldown = 800;
         let animFrameId = null; 
+        
+        // 프레임 보정 및 144Hz 등 속도 동기화용 타임 변수
+        let lastTime = 0;
+        let accumulator = 0;
+        const timeStep = 1000 / 60; // 초당 60프레임 고정 스텝
 
         function handleResize() {
             if (!ctx) return;
@@ -1087,6 +1088,9 @@
         }
 
         function startGame() {
+            // 다시하기 오류 픽스: 기존 오버레이 완벽하게 제거
+            document.getElementById('gameOverOverlay').classList.remove('active');
+            
             // 게임 시작 시 매판마다 순서 무작위 셔플 진행
             shuffleMembersForGame();
 
@@ -1104,20 +1108,20 @@
                 container.style.backgroundPosition = 'center';
             }
 
-            if (engine) {
+            // --- 엔진/월드 중복 누수 방지 및 깨끗한 리셋 ---
+            if (!engine) {
+                engine = Engine.create({
+                    positionIterations: 24, 
+                    velocityIterations: 16
+                });
+                world = engine.world;
+                engine.gravity.y = 1.2;
+                Events.on(engine, 'collisionStart', handleCollision);
+            } else {
+                // 엔진이 이미 존재하면 월드 안의 물리 오브젝트만 깨끗하게 청소
+                World.clear(world);
                 Engine.clear(engine);
-                Runner.stop(runner);
             }
-            if (animFrameId) {
-                cancelAnimationFrame(animFrameId);
-            }
-
-            engine = Engine.create({
-                positionIterations: 24, 
-                velocityIterations: 16
-            });
-            world = engine.world;
-            engine.gravity.y = 1.2;
 
             const ground = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT + WALL_THICKNESS / 2 - 10, GAME_WIDTH * 2, WALL_THICKNESS, { isStatic: true, friction: 0.1, render: { visible: false } });
             const leftWall = Bodies.rectangle(0 - WALL_THICKNESS / 2, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT * 2, { isStatic: true, friction: 0.1, render: { visible: false } });
@@ -1125,14 +1129,15 @@
             
             World.add(world, [ground, leftWall, rightWall]);
 
-            Events.on(engine, 'collisionStart', handleCollision);
+            // 타이머 초기화 (주사율 보정용)
+            lastTime = performance.now();
+            accumulator = 0;
 
-            runner = Runner.create({
-                isFixed: true,
-                delta: 1000 / 60
-            });
-            Runner.run(runner, engine);
-            animFrameId = requestAnimationFrame(renderLoop);
+            // 렌더링 루프가 두 번 돌아서 게임이 빨라지는 현상 방지
+            if (!isRenderLoopRunning) {
+                isRenderLoopRunning = true;
+                animFrameId = requestAnimationFrame(renderLoop);
+            }
 
             const container = document.getElementById('game-container');
             container.removeEventListener('mousemove', handleInputMove);
@@ -1366,13 +1371,27 @@
             }
         }
 
-        function renderLoop() {
+        function renderLoop(time) {
             if (!ctx) return;
+            if (!time) time = performance.now();
+
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
+            // 물리 엔진 강제 고정 주사율 동기화 로직 (144Hz, 240Hz 모니터 완벽 방어)
             if (gamePaused) {
-                animFrameId = requestAnimationFrame(renderLoop);
-                return;
+                lastTime = time;
+            } else {
+                let deltaTime = time - lastTime;
+                lastTime = time;
+                
+                // 탭 백그라운드 전환 등으로 인한 과도한 프레임 스킵 방지
+                if (deltaTime > 200) deltaTime = 200; 
+                
+                accumulator += deltaTime;
+                while (accumulator >= timeStep) {
+                    Engine.update(engine, timeStep);
+                    accumulator -= timeStep;
+                }
             }
 
             const bodies = Composite.allBodies(world);
@@ -1383,7 +1402,7 @@
                 }
             }
 
-            if (currentBody && !isGameOver) {
+            if (currentBody && !isGameOver && !gamePaused) {
                 drawMember(ctx, currentBody.x, currentBody.y, 0, currentBody.level);
 
                 ctx.beginPath();
@@ -1396,7 +1415,10 @@
                 ctx.setLineDash([]);
             }
 
-            checkGameOver();
+            if (!gamePaused) {
+                checkGameOver();
+            }
+            
             animFrameId = requestAnimationFrame(renderLoop);
         }
 
