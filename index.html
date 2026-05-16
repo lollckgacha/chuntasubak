@@ -36,6 +36,7 @@
 
         .menu-bg {
             position: fixed; inset: 0; z-index: -1;
+            /* 기존 인게임용 기본 그라데이션 배경 (게임 화면 뒤에 깔림) */
             background: radial-gradient(circle at 50% 50%, rgba(172, 254, 248, 0.15) 0%, var(--bg-dark) 80%);
         }
 
@@ -81,6 +82,20 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--theme-mint); cursor: pointer; border-radius: 50% !important; box-shadow: 0 0 10px rgba(172, 254, 248, 0.5); }
 
         /* --- 완벽한 반응형(Fluid) 레이아웃 시스템 --- */
+        
+        /* 게임 컨테이너 숨김 로직 (메인 화면에서 게임 화면이 보이지 않게 차단) */
+        #layoutContainer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #layoutContainer.game-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
         .pc-mode {
             display: flex; flex-direction: row; align-items: center; justify-content: center;
             gap: 1.5vw; width: 100%; height: 100%; padding: 2vh 2vw;
@@ -257,8 +272,15 @@
         .mobile-evo-badge { position: absolute; top: -4px; left: -4px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0a0a0f; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .mobile-evo-name { font-size: 12px; color: #d1d5db; font-weight: 700; text-align: center; margin-top: 6px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* 기타 공용 스타일 */
-        #loadingOverlay { position: fixed; inset: 0; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;}
+        /* 첫 시작 화면(홈 화면) 오버레이 배경 최적화 */
+        #loadingOverlay { 
+            position: fixed; inset: 0; 
+            background-color: var(--bg-dark);
+            background-image: linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.8)), url('https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/chunta.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;
+        }
         .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.1); border-top-color: var(--theme-mint); animation: spin 1s linear infinite; border-radius: 50% !important; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -293,7 +315,7 @@
         </div>
     </div>
 
-    <!-- 설정 모달 (z-index를 대폭 높여 메인화면 가림 버그 해결) -->
+    <!-- 설정 모달 -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 z-[100000] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="suika-panel p-8 w-full max-w-md text-center">
             <h2 class="text-3xl suika-font-black text-white mb-6 border-b border-[rgba(255,255,255,0.1)] pb-4">환경설정</h2>
@@ -379,9 +401,9 @@
         </div>
     </div>
 
-    <!-- 메인 레이아웃: 완전 반응형 렌더링 -->
+    <!-- 메인 레이아웃 (시작 전에는 보이지 않게 처리됨) -->
     <div class="w-full h-screen overflow-hidden">
-        <div id="layoutContainer" class="pc-mode transition-all duration-300">
+        <div id="layoutContainer" class="pc-mode">
             
             <div class="mobile-title w-full shrink-0">
                 <h1 class="text-3xl text-white suika-title m-0 leading-none drop-shadow-md text-center">천타버스 <span class="text-[#acfef8]">수박게임</span></h1>
@@ -488,7 +510,7 @@
         // --- 데이터 정의 ---
         const baseUrl = 'https://raw.githubusercontent.com/Cren0p/CRD/refs/heads/main/';
         
-        // 매 판 랜덤으로 깔릴 배경 이미지 링크 배열
+        // 인게임 플레이 컨테이너(수박이 떨어지는 박스) 배경으로 쓰일 이미지 배열
         const BACKGROUND_IMAGES = [
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/57946a008d9623d75.png',
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/19866a0206651052d.png'
@@ -533,16 +555,19 @@
             const btnMobile = document.getElementById('btnMobile');
             const layoutContainer = document.getElementById('layoutContainer');
 
+            // layoutContainer.className에 바로 넣지 않고 모드 클래스만 교체 (게임 활성화 상태 보존)
+            layoutContainer.classList.remove('pc-mode', 'mobile-mode');
+            
             if (mode === 'pc') {
                 toggleBg.style.left = '4px';
                 btnPC.classList.replace('text-white', 'text-gray-900');
                 btnMobile.classList.replace('text-gray-900', 'text-white');
-                layoutContainer.className = 'pc-mode transition-all duration-300';
+                layoutContainer.classList.add('pc-mode');
             } else {
                 toggleBg.style.left = 'calc(50% + 0px)';
                 btnPC.classList.replace('text-gray-900', 'text-white');
                 btnMobile.classList.replace('text-white', 'text-gray-900');
-                layoutContainer.className = 'mobile-mode transition-all duration-300';
+                layoutContainer.classList.add('mobile-mode');
             }
             
             // 모드가 변경되면 캔버스 크기를 다시 조정
@@ -550,6 +575,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            const layoutContainer = document.getElementById('layoutContainer');
+            // 초기 접속 시 게임 숨김
+            layoutContainer.classList.remove('game-active'); 
             setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
             window.addEventListener('resize', handleResize);
         });
@@ -566,6 +594,10 @@
                 bgm.volume = isBgmMuted ? 0 : bgmVolume;
             }
             bgm.play().catch(e => console.log('BGM Play failed:', e));
+            
+            // 게임 시작 로직: 로딩 오버레이 가리고, 게임 컨테이너 활성화
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('layoutContainer').classList.add('game-active');
             
             startGame();
         }
@@ -741,6 +773,7 @@
         }
 
         function returnToMenu() {
+            // 모달 모두 닫기
             document.getElementById('quitConfirmModal').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.remove('active');
             
@@ -750,6 +783,8 @@
             
             if(bgm) { bgm.pause(); bgm.currentTime = 0; }
 
+            // 게임 화면 숨기고 홈 화면 다시 표시
+            document.getElementById('layoutContainer').classList.remove('game-active');
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
 
@@ -941,15 +976,13 @@
         }
 
         function startGame() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('gameOverOverlay').classList.remove('active');
-            
             score = 0;
             updateScore();
             isGameOver = false;
             canDrop = true;
             gamePaused = false;
 
+            // 게임 시작 시, 컨테이너 배경에 테스트용 랜덤 이미지를 적용
             if (BACKGROUND_IMAGES && BACKGROUND_IMAGES.length > 0) {
                 const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
                 const container = document.getElementById('game-container');
@@ -996,6 +1029,7 @@
             container.addEventListener('touchstart', handleTouchStart, { passive: false });
             container.addEventListener('touchmove', handleInputMove, { passive: false });
             container.addEventListener('mousedown', handleInputDrop);
+            container.addEventListener('touchmove', handleInputMove);
             container.addEventListener('touchend', handleInputDrop);
 
             nextLevel = 0;
