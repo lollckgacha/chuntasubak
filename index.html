@@ -1111,16 +1111,17 @@
             // --- 엔진/월드 중복 누수 방지 및 깨끗한 리셋 ---
             if (!engine) {
                 engine = Engine.create({
-                    positionIterations: 24, 
-                    velocityIterations: 16
+                    positionIterations: 32, // 덜덜거림 방지: 연산 정밀도를 더 높임 (24 -> 32)
+                    velocityIterations: 24  // 속도 연산 정밀도 높임 (16 -> 24)
                 });
                 world = engine.world;
-                engine.gravity.y = 1.2;
+                engine.gravity.y = 2.0;
                 Events.on(engine, 'collisionStart', handleCollision);
             } else {
                 // 엔진이 이미 존재하면 월드 안의 물리 오브젝트만 깨끗하게 청소
                 World.clear(world);
                 Engine.clear(engine);
+                engine.gravity.y = 2.0;
             }
 
             const ground = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT + WALL_THICKNESS / 2 - 10, GAME_WIDTH * 2, WALL_THICKNESS, { isStatic: true, friction: 0.1, render: { visible: false } });
@@ -1225,11 +1226,11 @@
             playSound('drop', currentLevel);
             
             const body = Bodies.circle(currentBody.x, currentBody.y, currentBody.radius, {
-                restitution: 0.1,        
-                friction: 0.01,          
+                restitution: 0.02,       // 덜덜거림 방지: 탄성을 거의 0에 가깝게 줄임 (0.1 -> 0.02)
+                friction: 0.02,          // 마찰력 약간 증가 (0.01 -> 0.02)
                 frictionAir: 0.01,
-                density: 0.001 * Math.pow(1.2, currentLevel), 
-                slop: 0.05,             
+                density: 0.001 * Math.pow(1.1, currentLevel), // 덜덜거림 방지: 무게 편차 감소 (1.2 -> 1.1)
+                slop: 0.1,               // 덜덜거림 방지: 겹침 허용치 증가 (0.05 -> 0.1)
                 label: 'member',
                 level: currentBody.level,
                 plugin: { createdAt: Date.now() }
@@ -1270,11 +1271,11 @@
                     World.remove(world, [bodyA, bodyB]);
 
                     const newBody = Bodies.circle(midX, midY, MEMBERS_DATA[newLevel].radius, {
-                        restitution: 0.1,
-                        friction: 0.01,
+                        restitution: 0.02,       // 덜덜거림 방지: 탄성을 거의 0에 가깝게 줄임
+                        friction: 0.02,          
                         frictionAir: 0.01,
-                        density: 0.001 * Math.pow(1.2, newLevel), 
-                        slop: 0.05,
+                        density: 0.001 * Math.pow(1.1, newLevel), // 덜덜거림 방지: 무게 편차 감소
+                        slop: 0.1,               // 덜덜거림 방지: 겹침 허용치 증가
                         label: 'member',
                         level: newLevel,
                         plugin: { createdAt: Date.now() }
