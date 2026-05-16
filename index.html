@@ -97,11 +97,9 @@
 
         .pc-mode {
             display: flex; flex-direction: row; align-items: center; justify-content: center;
-            /* 패널들 사이의 간격을 대폭 줄여 밀착시킵니다. */
             gap: 1vw; width: 100%; height: 100%; padding: 2vh 2vw;
         }
         .pc-mode .game-wrapper {
-            /* 중앙 게임 영역이 필요 이상의 가로 공간을 차지하지 않고 딱 맞게 줄어들도록 수정 */
             flex: 0 0 auto; min-width: 0; min-height: 0; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
@@ -373,7 +371,6 @@
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">기본 효과음</div>
                     </label>
                     <label class="flex-1 relative">
-                        <!-- 멤버 효과음을 기본값(checked)으로 설정 -->
                         <input type="radio" name="sfxType" value="member" class="sr-only peer" checked onchange="changeSfxType('member')">
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">멤버 효과음</div>
                     </label>
@@ -538,46 +535,80 @@
         // --- 데이터 정의 ---
         const baseUrl = 'https://raw.githubusercontent.com/Cren0p/CRD/refs/heads/main/';
         
-        // 인게임 플레이 컨테이너(수박이 떨어지는 박스) 배경으로 쓰일 이미지 배열
+        // 인게임 배경 랜덤 이미지
         const BACKGROUND_IMAGES = [
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/57946a008d9623d75.png',
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/19866a0206651052d.png'
         ];
 
-        const MEMBERS_DATA = [
-            { level: 0, name: '김웰로', file: '09.jpg', color: '#BFEF90', radius: 15, score: 2 },
-            { level: 1, name: '나나문', file: '03.jpg', color: '#F4F6FF', radius: 22, score: 4 },
-            { level: 2, name: '달타', file: '11.jpg', color: '#FFC462', radius: 30, score: 6 },
-            { level: 3, name: '마다옴', file: '02.jpg', color: '#FFF5C3', radius: 38, score: 8 },
-            { level: 4, name: '모카', file: '10.jpg', color: '#5E8EFF', radius: 48, score: 10 },
-            { level: 5, name: '문모모', file: '05.jpg', color: '#A868FB', radius: 58, score: 12 },
-            { level: 6, name: '임하밍', file: '04.jpg', color: '#F8DBFF', radius: 70, score: 14 },
-            { level: 7, name: '카푸', file: '07.jpg', color: '#FFCFB7', radius: 84, score: 16 },
-            { level: 8, name: '캬앙', file: '08.jpg', color: '#FF5A4D', radius: 100, score: 18 },
-            { level: 9, name: '파니', file: '12.jpg', color: '#9FC5E8', radius: 118, score: 20 },
-            { level: 10, name: '한아밍', file: '06.jpg', color: '#FEC0C2', radius: 140, score: 22 },
-            { level: 11, name: '천양', file: '01.jpg', color: '#43EAF6', radius: 165, score: 40 }
+        // 베이스 멤버 고유 속성 (섞일 데이터)
+        const BASE_MEMBERS_DATA = [
+            { name: '김웰로', file: '09.jpg', color: '#BFEF90' },
+            { name: '나나문', file: '03.jpg', color: '#F4F6FF' },
+            { name: '달타', file: '11.jpg', color: '#FFC462' },
+            { name: '마다옴', file: '02.jpg', color: '#FFF5C3' },
+            { name: '모카', file: '10.jpg', color: '#5E8EFF' },
+            { name: '문모모', file: '05.jpg', color: '#A868FB' },
+            { name: '임하밍', file: '04.jpg', color: '#F8DBFF' },
+            { name: '카푸', file: '07.jpg', color: '#FFCFB7' },
+            { name: '캬앙', file: '08.jpg', color: '#FF5A4D' },
+            { name: '파니', file: '12.jpg', color: '#9FC5E8' },
+            { name: '한아밍', file: '06.jpg', color: '#FEC0C2' },
+            { name: '천양', file: '01.jpg', color: '#43EAF6' }
         ];
+
+        // 스테이지 공통 속성 (절대 섞이지 않고 크기/점수 역할만 함)
+        const STAGE_DATA = [
+            { level: 0, radius: 15, score: 2 },
+            { level: 1, radius: 22, score: 4 },
+            { level: 2, radius: 30, score: 6 },
+            { level: 3, radius: 38, score: 8 },
+            { level: 4, radius: 48, score: 10 },
+            { level: 5, radius: 58, score: 12 },
+            { level: 6, radius: 70, score: 14 },
+            { level: 7, radius: 84, score: 16 },
+            { level: 8, radius: 100, score: 18 },
+            { level: 9, radius: 118, score: 20 },
+            { level: 10, radius: 140, score: 22 },
+            { level: 11, radius: 165, score: 40 }
+        ];
+
+        // 매 게임마다 셔플되어 사용될 실제 진행 데이터 배열
+        let MEMBERS_DATA = STAGE_DATA.map((stage, i) => ({
+            ...stage,
+            name: BASE_MEMBERS_DATA[i].name,
+            file: BASE_MEMBERS_DATA[i].file,
+            color: BASE_MEMBERS_DATA[i].color
+        }));
 
         const images = {};
         const memberAudios = {}; 
         let loadedImages = 0;
         
-        let mergeRecords = JSON.parse(localStorage.getItem('chunta_suika_records')) || new Array(MEMBERS_DATA.length).fill(0);
+        // 기록을 멤버별로 정확하게 쌓기 위해 기존 기록(배열 형태 등)을 파싱합니다.
+        let rawRecords = JSON.parse(localStorage.getItem('chunta_suika_records'));
+        let mergeRecords = {};
+        if (Array.isArray(rawRecords)) {
+            // 과거 버전(배열) 기록 연동
+            rawRecords.forEach((count, i) => {
+                if (BASE_MEMBERS_DATA[i]) mergeRecords[BASE_MEMBERS_DATA[i].name] = count;
+            });
+            localStorage.setItem('chunta_suika_records', JSON.stringify(mergeRecords));
+        } else {
+            mergeRecords = rawRecords || {};
+        }
+
         let bestScore = parseInt(localStorage.getItem('chunta_suika_best_score')) || 0;
 
         let audioCtx = null;
         let bgm = null;
         let isBgmMuted = false;
         let isSfxMuted = false;
-        // 기본값을 'member'로 변경
         let sfxType = 'member'; 
         let bgmVolume = 0.5;
         let sfxVolume = 0.7;
         let gamePaused = false;
         let currentLayout = 'pc';
-        
-        // 현재 재생 중인 멤버 효과음을 추적하는 변수 (겹침 방지용)
         let currentSfxAudio = null;
 
         function setLayoutMode(mode) {
@@ -587,7 +618,6 @@
             const btnMobile = document.getElementById('btnMobile');
             const layoutContainer = document.getElementById('layoutContainer');
 
-            // layoutContainer.className에 바로 넣지 않고 모드 클래스만 교체 (게임 활성화 상태 보존)
             layoutContainer.classList.remove('pc-mode', 'mobile-mode');
             
             if (mode === 'pc') {
@@ -602,13 +632,11 @@
                 layoutContainer.classList.add('mobile-mode');
             }
             
-            // 모드가 변경되면 캔버스 크기를 다시 조정
             handleResize();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const layoutContainer = document.getElementById('layoutContainer');
-            // 초기 접속 시 게임 숨김
             layoutContainer.classList.remove('game-active'); 
             setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
             window.addEventListener('resize', handleResize);
@@ -627,26 +655,20 @@
             }
             bgm.play().catch(e => console.log('BGM Play failed:', e));
             
-            // "다시 보지 않음" 처리 로직 확인
             const hideModal = localStorage.getItem('chunta_suika_hide_sfx_modal') === 'true';
             
             if (hideModal) {
-                proceedToGame(); // 모달 생략하고 바로 게임 진입
+                proceedToGame(); 
             } else {
-                // 게임 시작 버튼을 누르면 효과음 선택 모달을 띄움
                 document.getElementById('sfxSelectModal').classList.remove('hidden');
             }
         }
 
         function confirmStartGame() {
-            // 사용자가 선택한 라디오 버튼 값 가져오기
             const selectedSfx = document.querySelector('input[name="initSfxType"]:checked').value;
             sfxType = selectedSfx;
-            
-            // 설정창 내부의 라디오 버튼 상태도 동기화
             document.querySelector(`input[name="sfxType"][value="${selectedSfx}"]`).checked = true;
 
-            // '다시 보지 않음' 체크 상태 저장
             const dontShow = document.getElementById('dontShowSfxModal').checked;
             if (dontShow) {
                 localStorage.setItem('chunta_suika_hide_sfx_modal', 'true');
@@ -672,44 +694,42 @@
         }
 
         function changeSfxType(type) {
-            // 이제 알림을 띄우지 않고 자연스럽게 sfxType만 변경하도록 수정
             sfxType = type;
         }
 
         function playSound(type, level = 0) {
             if (isSfxMuted) return;
 
-            // 1단계(level 0)가 아닌 과일이 떨어질 때는 어떠한 효과음도 내지 않음
+            // 1단계(가장 작은) 과일이 떨어질 때만 소리가 나게 설정
             if (type === 'drop' && level !== 0) return;
 
+            const currentMemberFile = MEMBERS_DATA[level].file;
+
             if (sfxType === 'member') {
-                if (type === 'drop') { // drop일 때는 무조건 level === 0 (위에서 예외처리됨)
-                    if (memberAudios[level]) {
-                        // 기존 소리 즉시 정지 (겹침 방지)
+                if (type === 'drop') { 
+                    if (memberAudios[currentMemberFile]) {
                         if (currentSfxAudio) {
                             currentSfxAudio.pause();
                             currentSfxAudio.currentTime = 0;
                         }
-                        console.log(`[효과음] 떨어짐: ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
-                        currentSfxAudio = memberAudios[level].cloneNode();
+                        console.log(`[효과음] 떨어짐: ${MEMBERS_DATA[level].name}`);
+                        currentSfxAudio = memberAudios[currentMemberFile].cloneNode();
                         currentSfxAudio.volume = sfxVolume;
-                        currentSfxAudio.play().catch(e => console.log('Custom Drop audio play failed:', e));
+                        currentSfxAudio.play().catch(e => console.log('Drop audio play failed:', e));
                     }
                     return; 
                 }
                 
                 if (type === 'merge' || type === 'merge_max') {
-                    if (memberAudios[level]) {
-                        // 기존 소리 즉시 정지 (겹침 방지)
+                    if (memberAudios[currentMemberFile]) {
                         if (currentSfxAudio) {
                             currentSfxAudio.pause();
                             currentSfxAudio.currentTime = 0;
                         }
-                        // 합쳐졌을 때 '새롭게 생성된' 다음 단계 과일의 음성이 출력됨을 콘솔로 확인 가능합니다.
-                        console.log(`[효과음] 합쳐짐(생성): ${level}단계 과일 (${MEMBERS_DATA[level].file.replace('.jpg', '.mp3')})`);
-                        currentSfxAudio = memberAudios[level].cloneNode();
+                        console.log(`[효과음] 합쳐짐: ${MEMBERS_DATA[level].name}`);
+                        currentSfxAudio = memberAudios[currentMemberFile].cloneNode();
                         currentSfxAudio.volume = sfxVolume;
-                        currentSfxAudio.play().catch(e => console.log('Custom Merge audio play failed:', e));
+                        currentSfxAudio.play().catch(e => console.log('Merge audio play failed:', e));
                     }
                     if (type === 'merge') return; 
                 }
@@ -722,7 +742,7 @@
             gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
 
-            if (type === 'drop') { // drop일 때는 무조건 level === 0 (위에서 예외처리됨)
+            if (type === 'drop') { 
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(300, now);
                 osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
@@ -794,9 +814,10 @@
             const list = document.getElementById('recordsList');
             list.innerHTML = '';
             
-            for (let i = 1; i < MEMBERS_DATA.length; i++) {
-                const m = MEMBERS_DATA[i];
-                const count = mergeRecords[i] || 0;
+            // 기록 창에서는 항상 기존(고정된) 멤버 순서대로 표기합니다.
+            for (let i = 1; i < BASE_MEMBERS_DATA.length; i++) {
+                const m = BASE_MEMBERS_DATA[i];
+                const count = mergeRecords[m.name] || 0;
                 
                 const item = document.createElement('div');
                 item.className = 'evo-item flex items-center justify-between p-2';
@@ -812,7 +833,8 @@
         }
 
         function saveRecord(level) {
-            mergeRecords[level] = (mergeRecords[level] || 0) + 1;
+            const memberName = MEMBERS_DATA[level].name;
+            mergeRecords[memberName] = (mergeRecords[memberName] || 0) + 1;
             localStorage.setItem('chunta_suika_records', JSON.stringify(mergeRecords));
         }
 
@@ -844,7 +866,6 @@
         }
 
         function returnToMenu() {
-            // 모달 모두 닫기
             document.getElementById('quitConfirmModal').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.remove('active');
             
@@ -854,7 +875,6 @@
             
             if(bgm) { bgm.pause(); bgm.currentTime = 0; }
 
-            // 게임 화면 숨기고 홈 화면 다시 표시
             document.getElementById('layoutContainer').classList.remove('game-active');
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
@@ -922,7 +942,6 @@
                 ctx.imageSmoothingQuality = 'high';
             }
 
-            // 모바일 넥스트 캔버스 리사이즈
             if (nextCanvas && nextCanvas.width !== 120 * newDpr) {
                 nextCanvas.width = 120 * newDpr;
                 nextCanvas.height = 120 * newDpr;
@@ -932,7 +951,6 @@
                 nextCtx.imageSmoothingQuality = 'high';
             }
 
-            // PC 넥스트 캔버스 리사이즈
             if (nextCanvasPC && nextCanvasPC.width !== 120 * newDpr) {
                 nextCanvasPC.width = 120 * newDpr;
                 nextCanvasPC.height = 120 * newDpr;
@@ -958,17 +976,14 @@
             if (nextCanvasPC) nextCtxPC = nextCanvasPC.getContext('2d');
             
             handleResize();
-            buildEvolutionGuide();
-            preloadImages();
+            preloadImages(); // 이미지를 모두 부른 후 진화 가이드 구축 대기
 
-            // 최고점수 초기 세팅
             const pcBest = document.getElementById('pc-bestScoreDisplay');
             if(pcBest) pcBest.innerText = bestScore;
         }
 
         function preloadImages() {
-            MEMBERS_DATA.forEach((member) => {
-                // 1. 이미지 로드
+            BASE_MEMBERS_DATA.forEach((member) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.onload = () => {
@@ -980,26 +995,50 @@
                     updateLoadingProgress();
                 };
                 img.src = baseUrl + member.file;
-                images[member.level] = img;
+                images[member.file] = img; // 고유 file 이름으로 저장
                 
-                // 2. 효과음 로드
-                // 제공된 깃허브 주소를 raw 주소로 변환하여 적용 (blob 주소는 오디오 재생이 안 됨)
                 const audioFile = member.file.replace('.jpg', '.mp3');
                 const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioFile}`;
                 
                 const audio = new Audio(customAudioUrl);
                 audio.preload = 'auto'; 
-                memberAudios[member.level] = audio;
+                memberAudios[member.file] = audio; // 고유 file 이름으로 저장
             });
         }
 
         function updateLoadingProgress() {
-            document.getElementById('loadProgress').innerText = `${loadedImages}/${MEMBERS_DATA.length}`;
-            if (loadedImages === MEMBERS_DATA.length) {
+            document.getElementById('loadProgress').innerText = `${loadedImages}/${BASE_MEMBERS_DATA.length}`;
+            if (loadedImages === BASE_MEMBERS_DATA.length) {
+                // 첫 UI 빌드
+                buildEvolutionGuide();
                 document.getElementById('loadingContent').classList.add('hidden');
                 document.getElementById('startContent').classList.remove('hidden');
                 document.getElementById('startContent').classList.add('flex');
             }
+        }
+
+        // 매 게임마다 마지막 11단계를 제외하고 0~10단계를 무작위 셔플
+        function shuffleMembersForGame() {
+            const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            
+            for (let i = 0; i < 11; i++) {
+                const randomIdx = indices[i];
+                MEMBERS_DATA[i].name = BASE_MEMBERS_DATA[randomIdx].name;
+                MEMBERS_DATA[i].file = BASE_MEMBERS_DATA[randomIdx].file;
+                MEMBERS_DATA[i].color = BASE_MEMBERS_DATA[randomIdx].color;
+            }
+            
+            // 11(마지막 단계, 천양)은 항상 고정
+            MEMBERS_DATA[11].name = BASE_MEMBERS_DATA[11].name;
+            MEMBERS_DATA[11].file = BASE_MEMBERS_DATA[11].file;
+            MEMBERS_DATA[11].color = BASE_MEMBERS_DATA[11].color;
+
+            // 셔플된 결과를 바탕으로 진화 순서 UI 재구축
+            buildEvolutionGuide();
         }
 
         function buildEvolutionGuide() {
@@ -1052,13 +1091,15 @@
         }
 
         function startGame() {
+            // 게임 시작 시 매판마다 순서 무작위 셔플 진행
+            shuffleMembersForGame();
+
             score = 0;
             updateScore();
             isGameOver = false;
             canDrop = true;
             gamePaused = false;
 
-            // 게임 시작 시, 컨테이너 배경에 테스트용 랜덤 이미지를 적용
             if (BACKGROUND_IMAGES && BACKGROUND_IMAGES.length > 0) {
                 const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
                 const container = document.getElementById('game-container');
@@ -1076,7 +1117,7 @@
             }
 
             engine = Engine.create({
-                positionIterations: 24, // 연산 정밀도 극대화 (겹침 및 덜덜거림 방지)
+                positionIterations: 24, 
                 velocityIterations: 16
             });
             world = engine.world;
@@ -1090,7 +1131,6 @@
 
             Events.on(engine, 'collisionStart', handleCollision);
 
-            // 주사율(프레임)에 상관없이 물리 엔진 연산 속도를 60FPS 기준으로 완벽히 고정
             runner = Runner.create({
                 isFixed: true,
                 delta: 1000 / 60
@@ -1184,10 +1224,10 @@
             playSound('drop', currentLevel);
             
             const body = Bodies.circle(currentBody.x, currentBody.y, currentBody.radius, {
-                restitution: 0.1,        // 아주 미세한 탄성 부여하여 충격 에너지 분산
-                friction: 0.01,          // 마찰력을 소폭 증가시켜 과도하게 계속 미끄러지는 현상 방지
+                restitution: 0.1,        
+                friction: 0.01,          
                 frictionAir: 0.01,
-                density: 0.001 * Math.pow(1.2, currentLevel), // 과일 간 무게 차이 완화 (안정성 증가)
+                density: 0.001 * Math.pow(1.2, currentLevel), 
                 slop: 0.05,             
                 label: 'member',
                 level: currentBody.level,
@@ -1219,7 +1259,6 @@
                     bodyA.isMerging = true;
                     bodyB.isMerging = true;
 
-                    // newLevel은 합쳐져서 새롭게 만들어진 '다음 단계'의 과일 레벨입니다.
                     const newLevel = bodyA.level + 1;
                     const midX = (bodyA.position.x + bodyB.position.x) / 2;
                     const midY = (bodyA.position.y + bodyB.position.y) / 2;
@@ -1230,7 +1269,7 @@
                         restitution: 0.1,
                         friction: 0.01,
                         frictionAir: 0.01,
-                        density: 0.001 * Math.pow(1.2, newLevel), // 과일 간 무게 차이 완화
+                        density: 0.001 * Math.pow(1.2, newLevel), 
                         slop: 0.05,
                         label: 'member',
                         level: newLevel,
@@ -1244,7 +1283,6 @@
                     addScore(MEMBERS_DATA[newLevel].score);
                     createPopEffect(midX, midY, newLevel);
 
-                    // 새로 생성된 '다음 단계 과일'의 레벨(newLevel)을 넘겨주어 해당 과일의 음성을 재생시킵니다.
                     if (newLevel === MEMBERS_DATA.length - 1) {
                         playSound('merge_max', newLevel);
                     } else {
@@ -1265,11 +1303,9 @@
         }
 
         function updateScore() {
-            // 모바일 뷰 점수 업데이트
             const mobileScoreDisplay = document.getElementById('scoreDisplay');
             if(mobileScoreDisplay) mobileScoreDisplay.innerText = score;
             
-            // PC 뷰 점수 업데이트
             const pcScoreDisplay = document.getElementById('pc-scoreDisplay');
             if(pcScoreDisplay) pcScoreDisplay.innerText = score;
             
@@ -1341,7 +1377,6 @@
             }
 
             if (currentBody && !isGameOver) {
-                // 투명도 설정 제거하여 100% 선명하게 렌더링
                 drawMember(ctx, currentBody.x, currentBody.y, 0, currentBody.level);
 
                 ctx.beginPath();
@@ -1361,7 +1396,8 @@
         function drawMember(context, x, y, angle, level) {
             const data = MEMBERS_DATA[level];
             const r = data.radius;
-            const img = images[level];
+            // 셔플된 고유 파일 이름으로 이미지를 불러옵니다.
+            const img = images[data.file];
 
             context.save();
             context.translate(x, y);
@@ -1409,7 +1445,6 @@
         }
 
         function drawNextItem() {
-            // 모바일과 PC 양쪽 캔버스에 모두 그려줌 (화면에 보이는 것만 렌더링됨)
             [nextCtx, nextCtxPC].forEach(c => {
                 if(!c) return;
                 
@@ -1430,7 +1465,8 @@
                 c.arc(0, 0, displayRadius - 0.5, 0, 2 * Math.PI);
                 c.clip();
 
-                const img = images[nextLevel];
+                // 셔플된 고유 파일 이름으로 이미지를 불러옵니다.
+                const img = images[data.file];
                 if (img && img.complete && img.naturalWidth !== 0) {
                     c.drawImage(img, -displayRadius, -displayRadius, displayRadius * 2, displayRadius * 2);
                 }
