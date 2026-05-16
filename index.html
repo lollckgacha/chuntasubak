@@ -83,13 +83,20 @@
         /* --- 완벽한 반응형(Fluid) 레이아웃 시스템 --- */
         .pc-mode {
             display: flex; flex-direction: row; align-items: center; justify-content: center;
-            gap: 20px; width: 100%; height: 100%; padding: 2vh 2vw;
+            gap: 1.5vw; width: 100%; height: 100%; padding: 2vh 2vw;
         }
         .pc-mode .game-wrapper {
             flex: 1; min-width: 0; min-height: 0; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         
+        /* PC모드 왼쪽 패널 (점수) */
+        .pc-mode #left-panel {
+            display: flex; flex-direction: column; width: clamp(140px, 16vw, 240px);
+            height: 85vh; max-height: 85vh; gap: 1.5vh; flex-shrink: 0;
+        }
+        
+        /* PC모드 오른쪽 패널 (NEXT + 진화순서) */
         .pc-mode #ui-panel { 
             display: flex; flex-direction: column; width: clamp(160px, 16vw, 240px); 
             height: 85vh; max-height: 85vh; gap: 1.5vh; flex-shrink: 0;
@@ -105,6 +112,9 @@
         .pc-mode .mobile-title { display: none; }
         .pc-mode .mobile-helper { display: none; }
         
+        /* PC모드에서 인게임 상단 HUD 숨김 처리 */
+        .pc-mode .hud-top { display: none !important; }
+        
         .mobile-mode {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 1vh; width: 100%; height: 100%; padding: 1vh 2vw;
@@ -113,6 +123,7 @@
             flex: 1; min-width: 0; min-height: 0; width: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
+        .mobile-mode #left-panel { display: none !important; }
         .mobile-mode #ui-panel {
             display: flex; flex-direction: row; width: 100%; max-width: calc(75vh * 5 / 7);
             gap: 0.5rem; justify-content: center; align-items: center; margin-top: 0.5rem; flex-shrink: 0;
@@ -122,6 +133,7 @@
         .mobile-mode .pc-title { display: none; }
         .mobile-mode .mobile-title { display: block; margin-bottom: 1vh; }
         .mobile-mode .mobile-helper { display: block; margin-top: 1.5vh; }
+        .mobile-mode .hud-top { display: flex; }
 
         /* --- 유동적(Fluid) 인게임 화면 컨테이너 --- */
         #game-container {
@@ -146,7 +158,7 @@
             z-index: 10; pointer-events: none;
         }
 
-        /* --- CQW 기반 유동적 인게임 UI --- */
+        /* --- CQW 기반 유동적 인게임 UI (모바일 전용) --- */
         .hud-top {
             position: absolute; top: 0; left: 0; right: 0; 
             padding: 4cqw;
@@ -358,12 +370,43 @@
         </div>
     </div>
 
+    <!-- 커스텀 알림 모달 -->
+    <div id="customAlertModal" class="hidden fixed inset-0 bg-black/80 z-[200000] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-6 w-full max-w-sm text-center">
+            <div class="text-4xl mb-4">🔔</div>
+            <p id="customAlertMessage" class="text-white suika-font-black text-lg mb-6 break-keep">알림 메시지</p>
+            <button onclick="closeCustomAlert()" class="suika-btn suika-btn-primary w-full py-3 text-lg suika-font-black">확인</button>
+        </div>
+    </div>
+
     <!-- 메인 레이아웃: 완전 반응형 렌더링 -->
     <div class="w-full h-screen overflow-hidden">
         <div id="layoutContainer" class="pc-mode transition-all duration-300">
             
             <div class="mobile-title w-full shrink-0">
                 <h1 class="text-3xl text-white suika-title m-0 leading-none drop-shadow-md text-center">천타버스 <span class="text-[#acfef8]">수박게임</span></h1>
+            </div>
+
+            <!-- PC모드 전용 왼쪽 패널 (점수창 및 컨트롤) -->
+            <div id="left-panel" class="pc-only-flex">
+                <div class="suika-panel flex-1 flex flex-col items-center justify-center p-6 gap-6 w-full">
+                    <div class="w-full text-center">
+                        <span class="text-[#acfef8] suika-font-black text-2xl tracking-widest block mb-2">점수</span>
+                        <span id="pc-scoreDisplay" class="text-white suika-font-black text-4xl drop-shadow-md">0</span>
+                    </div>
+                    
+                    <div class="w-[80%] h-px bg-[rgba(255,255,255,0.1)] my-2"></div>
+                    
+                    <div class="w-full text-center">
+                        <span class="text-[#acfef8] suika-font-black text-lg tracking-widest block mb-2">최고 점수</span>
+                        <span id="pc-bestScoreDisplay" class="text-yellow-300 suika-font-black text-3xl">0</span>
+                    </div>
+                </div>
+
+                <div class="suika-panel flex gap-3 p-3 shrink-0 mt-auto w-full">
+                    <button class="suika-btn flex-1 py-3 text-xl" onclick="openQuitConfirm()" title="메인 화면">🏠 홈</button>
+                    <button class="suika-btn flex-1 py-3 text-xl" onclick="openSettings()" title="환경 설정">⚙️ 설정</button>
+                </div>
             </div>
 
             <div class="game-wrapper">
@@ -377,6 +420,7 @@
                     <div class="deadline" id="deadline"></div>
                     <canvas id="gameCanvas"></canvas>
                     
+                    <!-- 모바일용 인게임 HUD (PC에서는 숨김 처리됨) -->
                     <div class="hud-top">
                         <div class="score-box">
                             <span class="text-gray-400 suika-font leading-none text-center">SCORE</span>
@@ -418,20 +462,22 @@
                 </div>
             </div>
             
-            <!-- 플레이 컨테이너와 동일한 85vh 높이를 가지는 UI 패널 -->
+            <!-- 플레이 컨테이너와 동일한 85vh 높이를 가지는 오른쪽 UI 패널 -->
             <div id="ui-panel">
                 <button class="suika-btn w-full py-3 text-base suika-font-black mobile-only" onclick="openGuide()">📖 진화 순서 보기</button>
                 
+                <!-- PC 모드 전용 NEXT 패널 -->
+                <div class="suika-panel pc-only-flex flex-col items-center justify-center py-4 mb-2 shrink-0">
+                    <span class="text-[#acfef8] suika-font-black text-xl mb-2 tracking-widest">다음</span>
+                    <canvas id="next-item-canvas-pc" class="w-[8vh] h-[8vh]"></canvas>
+                </div>
+
                 <div class="suika-panel evolution-wrapper pc-only-flex flex-col">
                     <div class="text-[#acfef8] suika-font-black text-center border-b border-[rgba(255,255,255,0.1)] evo-title">
                         진화 순서
                     </div>
                     <!-- PC 모드 전용 세로 2열 원형 그리드 진화 순서 -->
                     <div class="evolution-guide" id="evoList"></div>
-                </div>
-
-                <div class="pc-helper text-center text-gray-400 suika-font text-sm mt-auto bg-[rgba(0,0,0,0.3)] px-4 py-3 rounded-full pc-only-block">
-                    👆 화면을 클릭하여 떨어뜨리세요
                 </div>
             </div>
 
@@ -468,12 +514,13 @@
         let loadedImages = 0;
         
         let mergeRecords = JSON.parse(localStorage.getItem('chunta_suika_records')) || new Array(MEMBERS_DATA.length).fill(0);
+        let bestScore = parseInt(localStorage.getItem('chunta_suika_best_score')) || 0;
 
         let audioCtx = null;
         let bgm = null;
         let isBgmMuted = false;
         let isSfxMuted = false;
-        let sfxType = 'default'; // 효과음 종류 상태 ('default' 또는 'member')
+        let sfxType = 'default'; 
         let bgmVolume = 0.5;
         let sfxVolume = 0.7;
         let gamePaused = false;
@@ -497,6 +544,9 @@
                 btnMobile.classList.replace('text-white', 'text-gray-900');
                 layoutContainer.className = 'mobile-mode transition-all duration-300';
             }
+            
+            // 모드가 변경되면 캔버스 크기를 다시 조정
+            handleResize();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -520,11 +570,18 @@
             startGame();
         }
 
-        // 효과음 종류 변경 처리
+        function openCustomAlert(msg) {
+            document.getElementById('customAlertMessage').innerText = msg;
+            document.getElementById('customAlertModal').classList.remove('hidden');
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').classList.add('hidden');
+        }
+
         function changeSfxType(type) {
             if (type === 'member') {
-                alert("아직 음원이 업데이트 되지 않아 준비 중입니다!");
-                // 다시 기본 효과음 라디오 버튼으로 롤백
+                openCustomAlert("아직 음원이 업데이트 되지 않아 준비 중입니다!");
                 document.querySelector('input[name="sfxType"][value="default"]').checked = true;
                 sfxType = 'default';
             } else {
@@ -535,7 +592,6 @@
         function playSound(type, level = 0) {
             if (isSfxMuted) return;
 
-            // --- 1. 커스텀 멤버 효과음 처리 (설정에서 멤버 효과음 선택 시) ---
             if (sfxType === 'member') {
                 if (type === 'drop' && level <= 2) {
                     if (memberAudios[level]) {
@@ -556,7 +612,6 @@
                 }
             }
 
-            // --- 2. 기본 신디사이저 효과음 로직 ---
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -612,7 +667,6 @@
         function openSettings() {
             gamePaused = true;
             if (typeof runner !== 'undefined' && runner) Runner.stop(runner); 
-            // classList.remove('hidden') 만으로도 뜨도록 z-index(100000)를 높였습니다.
             document.getElementById('settingsModal').classList.remove('hidden');
         }
 
@@ -737,7 +791,7 @@
         const GAME_HEIGHT = 700;
         const WALL_THICKNESS = 60;
         const DEADLINE_Y = GAME_HEIGHT * 0.15;
-        let canvas, ctx, nextCanvas, nextCtx;
+        let canvas, ctx, nextCanvas, nextCtx, nextCanvasPC, nextCtxPC;
         let score = 0;
         let isGameOver = false;
         let currentBody = null;
@@ -749,9 +803,7 @@
         let animFrameId = null; 
 
         function handleResize() {
-            if (!ctx || !nextCtx) return;
-            
-            setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
+            if (!ctx) return;
             
             const newDpr = window.devicePixelRatio || 1;
             
@@ -764,29 +816,48 @@
                 ctx.imageSmoothingQuality = 'high';
             }
 
-            if (nextCanvas.width !== 120 * newDpr) {
+            // 모바일 넥스트 캔버스 리사이즈
+            if (nextCanvas && nextCanvas.width !== 120 * newDpr) {
                 nextCanvas.width = 120 * newDpr;
                 nextCanvas.height = 120 * newDpr;
                 nextCtx.resetTransform();
                 nextCtx.scale(newDpr, newDpr);
                 nextCtx.imageSmoothingEnabled = true;
                 nextCtx.imageSmoothingQuality = 'high';
-                
-                if (nextLevel !== undefined) {
-                    drawNextItem();
-                }
+            }
+
+            // PC 넥스트 캔버스 리사이즈
+            if (nextCanvasPC && nextCanvasPC.width !== 120 * newDpr) {
+                nextCanvasPC.width = 120 * newDpr;
+                nextCanvasPC.height = 120 * newDpr;
+                nextCtxPC.resetTransform();
+                nextCtxPC.scale(newDpr, newDpr);
+                nextCtxPC.imageSmoothingEnabled = true;
+                nextCtxPC.imageSmoothingQuality = 'high';
+            }
+
+            if (nextLevel !== undefined) {
+                drawNextItem();
             }
         }
 
         function init() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
+            
             nextCanvas = document.getElementById('next-item-canvas');
-            nextCtx = nextCanvas.getContext('2d');
+            if (nextCanvas) nextCtx = nextCanvas.getContext('2d');
+            
+            nextCanvasPC = document.getElementById('next-item-canvas-pc');
+            if (nextCanvasPC) nextCtxPC = nextCanvasPC.getContext('2d');
             
             handleResize();
             buildEvolutionGuide();
             preloadImages();
+
+            // 최고점수 초기 세팅
+            const pcBest = document.getElementById('pc-bestScoreDisplay');
+            if(pcBest) pcBest.innerText = bestScore;
         }
 
         function preloadImages() {
@@ -1069,11 +1140,25 @@
 
         function addScore(points) {
             score += points;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('chunta_suika_best_score', bestScore);
+            }
             updateScore();
         }
 
         function updateScore() {
-            document.getElementById('scoreDisplay').innerText = score;
+            // 모바일 뷰 점수 업데이트
+            const mobileScoreDisplay = document.getElementById('scoreDisplay');
+            if(mobileScoreDisplay) mobileScoreDisplay.innerText = score;
+            
+            // PC 뷰 점수 업데이트
+            const pcScoreDisplay = document.getElementById('pc-scoreDisplay');
+            if(pcScoreDisplay) pcScoreDisplay.innerText = score;
+            
+            const pcBestScoreDisplay = document.getElementById('pc-bestScoreDisplay');
+            if(pcBestScoreDisplay) pcBestScoreDisplay.innerText = bestScore;
         }
 
         function createPopEffect(x, y, level) {
@@ -1140,9 +1225,8 @@
             }
 
             if (currentBody && !isGameOver) {
-                ctx.globalAlpha = 0.6;
+                // 투명도 설정 제거하여 100% 선명하게 렌더링
                 drawMember(ctx, currentBody.x, currentBody.y, 0, currentBody.level);
-                ctx.globalAlpha = 1.0;
 
                 ctx.beginPath();
                 ctx.moveTo(currentBody.x, currentBody.y + currentBody.radius);
@@ -1209,37 +1293,42 @@
         }
 
         function drawNextItem() {
-            nextCtx.clearRect(0, 0, 120, 120);
-            const data = MEMBERS_DATA[nextLevel];
-            const displayRadius = Math.min(data.radius, 40); 
-            
-            nextCtx.save();
-            nextCtx.translate(60, 60);
+            // 모바일과 PC 양쪽 캔버스에 모두 그려줌 (화면에 보이는 것만 렌더링됨)
+            [nextCtx, nextCtxPC].forEach(c => {
+                if(!c) return;
+                
+                c.clearRect(0, 0, 120, 120);
+                const data = MEMBERS_DATA[nextLevel];
+                const displayRadius = Math.min(data.radius, 40); 
+                
+                c.save();
+                c.translate(60, 60);
 
-            nextCtx.beginPath();
-            nextCtx.arc(0, 0, displayRadius, 0, 2 * Math.PI);
-            nextCtx.fillStyle = data.color;
-            nextCtx.fill();
+                c.beginPath();
+                c.arc(0, 0, displayRadius, 0, 2 * Math.PI);
+                c.fillStyle = data.color;
+                c.fill();
 
-            nextCtx.save();
-            nextCtx.beginPath();
-            nextCtx.arc(0, 0, displayRadius - 0.5, 0, 2 * Math.PI);
-            nextCtx.clip();
+                c.save();
+                c.beginPath();
+                c.arc(0, 0, displayRadius - 0.5, 0, 2 * Math.PI);
+                c.clip();
 
-            const img = images[nextLevel];
-            if (img && img.complete && img.naturalWidth !== 0) {
-                nextCtx.drawImage(img, -displayRadius, -displayRadius, displayRadius * 2, displayRadius * 2);
-            }
-            
-            nextCtx.restore();
+                const img = images[nextLevel];
+                if (img && img.complete && img.naturalWidth !== 0) {
+                    c.drawImage(img, -displayRadius, -displayRadius, displayRadius * 2, displayRadius * 2);
+                }
+                
+                c.restore();
 
-            nextCtx.beginPath();
-            nextCtx.arc(0, 0, displayRadius - 2, 0, 2 * Math.PI);
-            nextCtx.lineWidth = 4;
-            nextCtx.strokeStyle = data.color;
-            nextCtx.stroke();
-            
-            nextCtx.restore();
+                c.beginPath();
+                c.arc(0, 0, displayRadius - 2, 0, 2 * Math.PI);
+                c.lineWidth = 4;
+                c.strokeStyle = data.color;
+                c.stroke();
+                
+                c.restore();
+            });
         }
 
         function restartGame() {
