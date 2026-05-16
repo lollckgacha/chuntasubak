@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>천타버스 수박게임</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Jua&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    
+    <style>
+        :root {
+            --theme-mint: #acfef8;
+            --theme-mint-dark: #6bd6d0;
+            --bg-dark: #12141c;
+            --panel-bg: rgba(30, 34, 45, 0.85);
+            --border-color: rgba(172, 254, 248, 0.3);
+        }
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: white; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            touch-action: none; 
+        }
+        
+        .suika-font { font-family: 'Noto Sans KR', sans-serif; font-weight: 700; letter-spacing: 0.02em; }
+        .suika-font-black { font-family: 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: 0.02em; }
+        .suika-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; letter-spacing: 0.05em; }
+        
+        * { outline: none !important; user-select: none; }
+
+        .menu-bg {
+            position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(172, 254, 248, 0.15) 0%, var(--bg-dark) 80%);
+        }
+
+        .suika-panel {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-color);
+            border-radius: 12px; 
+            backdrop-filter: blur(10px); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .suika-btn {
+            background: rgba(255, 255, 255, 0.1); 
+            color: white; 
+            border: 2px solid var(--border-color);
+            border-radius: 8px; 
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative; 
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .suika-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--theme-mint);
+            box-shadow: 0 0 15px rgba(172, 254, 248, 0.4); 
+            transform: scale(1.05);
+        }
+        .suika-btn-primary { 
+            background: var(--theme-mint); 
+            border-color: var(--theme-mint); 
+            color: var(--bg-dark); 
+        }
+        .suika-btn-primary:hover { 
+            background: #8de5dd; 
+            border-color: #8de5dd; 
+            color: var(--bg-dark); 
+            box-shadow: 0 0 20px rgba(172, 254, 248, 0.6); 
+        }
+
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.2); outline: none; margin: 10px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--theme-mint); cursor: pointer; border-radius: 50% !important; box-shadow: 0 0 10px rgba(172, 254, 248, 0.5); }
+
+        /* --- 완벽한 반응형(Fluid) 레이아웃 시스템 --- */
+        .pc-mode {
+            display: flex; flex-direction: row; align-items: center; justify-content: center;
+            gap: 20px; /* 게임 컨테이너와 진화 트리 사이의 간격을 대폭 줄여 밀착시킴 */
+            width: 100%; height: 100%; padding: 2vh 2vw;
+        }
+        .pc-mode .game-wrapper {
+            flex: 1; min-width: 0; min-height: 0; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        /* PC모드 UI패널: 패널 자체의 너비를 조금 더 슬림하게 잡아 빈 공간 축소 */
+        .pc-mode #ui-panel { 
+            display: flex; flex-direction: column; width: clamp(160px, 16vw, 240px); 
+            height: 85vh; max-height: 85vh; gap: 1.5vh; flex-shrink: 0;
+        }
+        .pc-mode .evolution-wrapper { 
+            flex: 1; 
+            min-height: 0; /* 내부 그리드가 밖으로 넘치지 않게 하는 핵심 속성 */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+        }
+        
+        .pc-mode .pc-only-flex { display: flex; }
+        .pc-mode .pc-only-block { display: block; }
+        .pc-mode .mobile-only { display: none !important; }
+        .pc-mode .pc-title { display: block; margin-bottom: 2vh; }
+        .pc-mode .mobile-title { display: none; }
+        .pc-mode .mobile-helper { display: none; }
+        
+        .mobile-mode {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1vh; width: 100%; height: 100%; padding: 1vh 2vw;
+        }
+        .mobile-mode .game-wrapper {
+            flex: 1; min-width: 0; min-height: 0; width: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .mobile-mode #ui-panel {
+            display: flex; flex-direction: row; width: 100%; max-width: calc(75vh * 5 / 7);
+            gap: 0.5rem; justify-content: center; align-items: center; margin-top: 0.5rem; flex-shrink: 0;
+        }
+        .mobile-mode .mobile-only { display: block; }
+        .mobile-mode .pc-only-flex, .mobile-mode .pc-only-block { display: none !important; }
+        .mobile-mode .pc-title { display: none; }
+        .mobile-mode .mobile-title { display: block; margin-bottom: 1vh; }
+        .mobile-mode .mobile-helper { display: block; margin-top: 1.5vh; }
+
+        /* --- 유동적(Fluid) 인게임 화면 컨테이너 --- */
+        #game-container {
+            position: relative; 
+            background: rgba(18, 20, 28, 0.9);
+            box-shadow: 0 0 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); 
+            overflow: hidden;
+            
+            aspect-ratio: 5 / 7;
+            flex-shrink: 0;
+            container-type: inline-size;
+            
+            border: 0.8cqw solid var(--theme-mint); 
+            border-radius: 10px; 
+        }
+
+        .pc-mode #game-container { height: 85vh; max-height: 85vh; width: auto; }
+        .mobile-mode #game-container { width: 100%; max-width: calc(75vh * 5 / 7); height: auto; }
+        
+        #gameCanvas { width: 100%; height: 100%; display: block; border-radius: 6px; }
+
+        .deadline {
+            position: absolute; top: 15%; left: 0; width: 100%; height: 0.6cqw;
+            background: repeating-linear-gradient(90deg, transparent, transparent 2cqw, rgba(239, 68, 68, 0.6) 2cqw, rgba(239, 68, 68, 0.6) 4cqw);
+            z-index: 10; pointer-events: none;
+        }
+
+        /* --- CQW 기반 유동적 인게임 UI --- */
+        .hud-top {
+            position: absolute; top: 0; left: 0; right: 0; 
+            padding: 4cqw;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none; z-index: 20;
+        }
+
+        .score-box { 
+            background: var(--panel-bg); 
+            border: 0.4cqw solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 1.5cqw 3cqw; 
+            display: flex; flex-direction: column; 
+            pointer-events: auto;
+            box-shadow: 0 0.8cqw 2cqw rgba(0,0,0,0.3);
+            min-width: 16cqw;
+        }
+        .score-box span:first-child { font-size: 2.2cqw; margin-bottom: 0.5cqw; }
+        .score-box span:last-child { font-size: 6cqw; }
+
+        .next-box { 
+            background: var(--panel-bg); 
+            border: 0.4cqw solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 1.5cqw; 
+            display: flex; flex-direction: column; align-items: center; 
+            pointer-events: auto;
+            box-shadow: 0 0.8cqw 2cqw rgba(0,0,0,0.3);
+            min-width: 14cqw;
+        }
+        .next-box span { font-size: 2cqw; }
+        #next-item-canvas { width: 9cqw; height: 9cqw; margin-top: 1cqw; }
+
+        .in-game-btns {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 4cqw;
+            display: flex;
+            gap: 2cqw;
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .in-game-btns .suika-btn {
+            width: 10cqw;
+            height: 10cqw;
+            font-size: 4.5cqw;
+            border-width: 0.4cqw;
+            border-radius: 8px;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        #gameOverOverlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        #gameOverOverlay.active { opacity: 1; pointer-events: auto; }
+        
+        #gameOverOverlay .suika-panel {
+            padding: 6cqw;
+            border-radius: 12px;
+            border-width: 0.4cqw;
+            width: 80cqw;
+        }
+        #gameOverOverlay h2 { font-size: 8cqw; margin-bottom: 2cqw; }
+        #gameOverOverlay .final-score-title { font-size: 3cqw; margin-bottom: 1cqw; }
+        #finalScore { font-size: 10cqw; }
+        #gameOverOverlay .btn-group { gap: 2cqw; margin-top: 6cqw; display: flex; flex-direction: column; }
+        #gameOverOverlay .suika-btn { padding: 3cqw; font-size: 4cqw; border-width: 0.4cqw; border-radius: 8px; }
+
+        .score-popup { position: absolute; font-weight: 900; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 0 0 1cqw var(--theme-mint-dark), 0 0 2cqw rgba(0,0,0,0.8); z-index: 30; }
+        @keyframes floatUp { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 50% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -150%) scale(1); opacity: 0; } }
+
+        /* --- PC 모드 전용 진화 순서 UI (틀 밖으로 절대 넘어가지 않게 방어 속성 적용) --- */
+        .pc-mode .evo-title {
+            font-size: clamp(14px, 2vh, 20px);
+            padding: 1vh 0;
+            flex-shrink: 0;
+        }
+        .pc-mode .evolution-guide { 
+            display: grid; 
+            /* minmax(0, 1fr)로 설정하여 항목들이 무조건 주어진 공간 안에서만 크기를 맞추도록 함 (오버플로우 완벽 차단) */
+            grid-template-rows: repeat(6, minmax(0, 1fr)); 
+            grid-template-columns: repeat(2, minmax(0, 1fr)); 
+            grid-auto-flow: column; 
+            justify-content: center; 
+            align-items: center;
+            gap: 0 1vw; /* 세로 갭을 없애 1fr 비율에 완전히 맞춤 */
+            padding: 0.5vh 1vw 1vh 1vw; 
+            flex: 1;
+            min-height: 0; /* 컨테이너 밖으로 넘어가지 않게 방지 */
+        }
+        .pc-evo-item { 
+            width: 100%; 
+            height: 100%;
+            min-width: 0; 
+            min-height: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .pc-evo-img-box { 
+            /* 높이를 기준으로 이미지가 크기를 조절하여 패널이 넘치지 않게 안전장치 */
+            width: min(100%, 6vh); 
+            aspect-ratio: 1; /* 완벽한 원형 유지 */
+            border-radius: 50%; 
+            border: 2px solid; 
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4); 
+            flex-shrink: 0; /* 사진 크기 유지 */
+        }
+        .pc-evo-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            border-radius: 50%; 
+        }
+        .pc-evo-badge {
+            position: absolute; 
+            top: -2px; left: -2px;
+            width: 40%; height: 40%; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(9px, 1.3vh, 14px); font-weight: 900; color: #0a0a0f;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .pc-evo-name {
+            font-size: clamp(10px, 1.4vh, 16px); color: #d1d5db; font-weight: 700;
+            text-align: center; margin-top: 4px;
+            width: 100%; max-width: 100%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .pc-evo-arrow {
+            color: rgba(255,255,255,0.4); font-size: clamp(10px, 1.5vh, 18px); line-height: 1; margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* --- 모바일 모드 진화 가이드 스타일 --- */
+        .mobile-mode .evolution-guide { 
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 12px; padding: 15px 10px; overflow-y: auto; align-content: flex-start; flex: 1;
+        }
+        .mobile-evo-item { width: 65px; display: flex; flex-direction: column; align-items: center; }
+        .mobile-evo-img-box { 
+            width: 54px; height: 54px; border-radius: 50%; border: 3px solid; 
+            position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        }
+        .mobile-evo-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .mobile-evo-badge {
+            position: absolute; top: -4px; left: -4px; width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0a0a0f; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .mobile-evo-name { font-size: 12px; color: #d1d5db; font-weight: 700; text-align: center; margin-top: 6px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* 기타 공용 스타일 */
+        #loadingOverlay { position: fixed; inset: 0; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;}
+        .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.1); border-top-color: var(--theme-mint); animation: spin 1s linear infinite; border-radius: 50% !important; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="menu-bg"></div>
+
+    <!-- 로딩 및 시작 화면 -->
+    <div id="loadingOverlay">
+        <div id="loadingContent" class="text-center">
+            <div class="spinner mx-auto mb-8"></div>
+            <p class="text-white text-2xl suika-font tracking-widest text-gray-400">에셋 로딩 중... <span id="loadProgress" class="text-white ml-2">0/12</span></p>
+        </div>
+        <div id="startContent" class="text-center hidden flex-col items-center">
+            <h1 class="text-6xl sm:text-7xl text-white suika-title mb-10 drop-shadow-[0_0_20px_rgba(172,254,248,0.5)]">천타버스 <span class="text-[#acfef8] block mt-2">수박게임</span></h1>
+            
+            <div class="bg-gray-800/80 backdrop-blur border border-[rgba(255,255,255,0.1)] rounded-[8px] p-1 flex relative w-72 sm:w-80 shadow-inner mb-6 mx-auto">
+                <div id="toggleBg" class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#acfef8] rounded-[6px] transition-all duration-300" style="left: 4px;"></div>
+                <button id="btnPC" class="flex-1 py-3 relative z-10 text-gray-900 suika-font-black transition-colors text-sm sm:text-base rounded-[6px]" onclick="setLayoutMode('pc')">💻 PC UI (가로)</button>
+                <button id="btnMobile" class="flex-1 py-3 relative z-10 text-white suika-font-black transition-colors text-sm sm:text-base rounded-[6px]" onclick="setLayoutMode('mobile')">📱 모바일 UI (세로)</button>
+            </div>
+
+            <button class="suika-btn suika-btn-primary w-72 sm:w-80 py-5 text-2xl suika-font-black shadow-[0_0_20px_rgba(172,254,248,0.4)] mb-4" onclick="initAudioAndStart()">
+                게임 시작
+            </button>
+
+            <!-- 메인화면 하단 기록/설정 버튼 그룹 -->
+            <div class="flex gap-4 w-72 sm:w-80 mx-auto">
+                <button class="suika-btn flex-1 py-3 text-lg suika-font-black" onclick="openRecords()">🏆 기록</button>
+                <button class="suika-btn flex-1 py-3 text-lg suika-font-black" onclick="openSettings()">⚙️ 설정</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-8 w-full max-w-md text-center">
+            <h2 class="text-3xl suika-font-black text-white mb-6 border-b border-[rgba(255,255,255,0.1)] pb-4">환경설정</h2>
+
+            <div class="mb-6 pt-2">
+                <div class="flex items-center justify-between mb-2 gap-3">
+                    <button id="bgmMuteBtn" class="suika-btn w-12 h-12 flex items-center justify-center text-2xl bg-gray-800 flex-shrink-0" onclick="toggleBgmMute()">🔊</button>
+                    <span class="suika-font text-gray-300 text-lg flex-1 text-left">배경음악 (BGM)</span>
+                    <span id="bgmVolText" class="text-[#acfef8] font-bold w-12 text-right">50%</span>
+                </div>
+                <input type="range" id="bgmSlider" min="0" max="100" value="50" oninput="updateSettingsVolume()">
+            </div>
+
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2 gap-3">
+                    <button id="sfxMuteBtn" class="suika-btn w-12 h-12 flex items-center justify-center text-2xl bg-gray-800 flex-shrink-0" onclick="toggleSfxMute()">🔊</button>
+                    <span class="suika-font text-gray-300 text-lg flex-1 text-left">효과음 (SFX)</span>
+                    <span id="sfxVolText" class="text-[#acfef8] font-bold w-12 text-right">70%</span>
+                </div>
+                <input type="range" id="sfxSlider" min="0" max="100" value="70" oninput="updateSettingsVolume()">
+            </div>
+
+            <button onclick="closeSettings()" class="suika-btn suika-btn-primary w-full py-4 text-xl suika-font-black">닫기</button>
+        </div>
+    </div>
+
+    <!-- 누적 제작 기록 모달 -->
+    <div id="recordsModal" class="hidden fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-6 w-full max-w-md flex flex-col max-h-[85vh]">
+            <h2 class="text-2xl suika-font-black text-[#acfef8] mb-4 text-center border-b border-[rgba(255,255,255,0.1)] pb-3">멤버 제작(합성) 기록</h2>
+            <div class="mobile-mode" style="padding:0; height: auto; overflow-y:auto;">
+                <div class="w-full mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3" id="recordsList">
+                    <!-- JavaScript로 채워짐 -->
+                </div>
+            </div>
+            <button onclick="closeRecords()" class="suika-btn suika-btn-primary w-full py-3 text-lg suika-font-black">닫기</button>
+        </div>
+    </div>
+
+    <!-- 도감 모달 (모바일 환경) -->
+    <div id="guideModal" class="hidden fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-6 w-full max-w-sm flex flex-col max-h-[85vh]">
+            <h2 class="text-2xl suika-font-black text-[#acfef8] mb-4 text-center border-b border-[rgba(255,255,255,0.1)] pb-3">진화 순서</h2>
+            <div class="mobile-mode" style="padding:0; flex:1; overflow:hidden;">
+                <div class="evolution-guide w-full" id="modalEvoList"></div>
+            </div>
+            <button onclick="closeGuide()" class="suika-btn suika-btn-primary w-full py-3 mt-4 text-lg suika-font-black">닫기</button>
+        </div>
+    </div>
+
+    <!-- 메인 화면 복귀 확인 모달 -->
+    <div id="quitConfirmModal" class="hidden fixed inset-0 bg-black/80 z-[160] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="suika-panel p-6 w-full max-w-sm text-center">
+            <h2 class="text-2xl suika-font-black text-white mb-3">메인 화면으로<br>돌아가시겠습니까?</h2>
+            <p class="text-gray-400 suika-font mb-6">현재 진행 중인 게임 기록이 사라집니다.</p>
+            <div class="flex gap-3">
+                <button onclick="closeQuitConfirm()" class="suika-btn flex-1 py-3 text-lg suika-font-black">취소</button>
+                <button onclick="returnToMenu()" class="suika-btn suika-btn-primary flex-1 py-3 text-lg suika-font-black">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 레이아웃: 완전 반응형 렌더링 -->
+    <div class="w-full h-screen overflow-hidden">
+        <div id="layoutContainer" class="pc-mode transition-all duration-300">
+            
+            <div class="mobile-title w-full shrink-0">
+                <h1 class="text-3xl text-white suika-title m-0 leading-none drop-shadow-md text-center">천타버스 <span class="text-[#acfef8]">수박게임</span></h1>
+            </div>
+
+            <div class="game-wrapper">
+                
+                <div class="pc-title w-full text-center">
+                    <h1 class="text-5xl text-white suika-title m-0 leading-none tracking-wider drop-shadow-md">천타버스 <span class="text-[#acfef8]">수박게임</span></h1>
+                </div>
+
+                <!-- 플레이 화면 컨테이너 (85vh 기준 완벽 보존) -->
+                <div id="game-container">
+                    <div class="deadline" id="deadline"></div>
+                    <canvas id="gameCanvas"></canvas>
+                    
+                    <div class="hud-top">
+                        <div class="score-box">
+                            <span class="text-gray-400 suika-font leading-none text-center">SCORE</span>
+                            <span id="scoreDisplay" class="text-white suika-font-black leading-none text-center">0</span>
+                        </div>
+                        
+                        <div class="in-game-btns">
+                            <button class="suika-btn" onclick="openQuitConfirm()" title="메인 화면">🏠</button>
+                            <button class="suika-btn" onclick="openSettings()" title="환경 설정">⚙️</button>
+                        </div>
+
+                        <div class="next-box">
+                            <span class="text-gray-400 suika-font leading-none">NEXT</span>
+                            <canvas id="next-item-canvas"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="gameOverOverlay">
+                        <div class="suika-panel text-center">
+                            <h2 class="suika-font-black text-red-500">GAME OVER</h2>
+                            <div>
+                                <span class="final-score-title text-gray-400 suika-font block">FINAL SCORE</span>
+                                <span id="finalScore" class="text-[#acfef8] suika-font-black">0</span>
+                            </div>
+                            <div class="btn-group">
+                                <button class="suika-btn suika-btn-primary w-full suika-font-black" onclick="restartGame()">
+                                    다시 하기
+                                </button>
+                                <button class="suika-btn w-full suika-font-black" onclick="returnToMenu()">
+                                    메인 화면
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mobile-helper text-center text-gray-400 suika-font text-xs tracking-widest bg-[rgba(0,0,0,0.3)] px-4 py-2 rounded-full w-max">
+                    👆 화면을 터치하여 떨어뜨리세요
+                </div>
+            </div>
+            
+            <!-- 플레이 컨테이너와 동일한 85vh 높이를 가지는 UI 패널 -->
+            <div id="ui-panel">
+                <button class="suika-btn w-full py-3 text-base suika-font-black mobile-only" onclick="openGuide()">📖 진화 순서 보기</button>
+                
+                <div class="suika-panel evolution-wrapper pc-only-flex flex-col">
+                    <div class="text-[#acfef8] suika-font-black text-center border-b border-[rgba(255,255,255,0.1)] evo-title">
+                        진화 순서
+                    </div>
+                    <!-- PC 모드 전용 세로 2열 원형 그리드 진화 순서 -->
+                    <div class="evolution-guide" id="evoList"></div>
+                </div>
+
+                <div class="pc-helper text-center text-gray-400 suika-font text-sm mt-auto bg-[rgba(0,0,0,0.3)] px-4 py-3 rounded-full pc-only-block">
+                    👆 화면을 클릭하여 떨어뜨리세요
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 데이터 정의 ---
+        const baseUrl = 'https://raw.githubusercontent.com/Cren0p/CRD/refs/heads/main/';
+        
+        // 매 판 랜덤으로 깔릴 배경 이미지 링크 배열 (원하는 이미지 링크를 이 배열에 추가/수정하세요)
+        const BACKGROUND_IMAGES = [
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/57946a008d9623d75.png', // 테스트 배경 1
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/19866a0206651052d.png'  // 테스트 배경 2
+        ];
+
+        const MEMBERS_DATA = [
+            { level: 0, name: '김웰로', file: '09.webp', color: '#BFEF90', radius: 15, score: 2 },
+            { level: 1, name: '나나문', file: '03.webp', color: '#F4F6FF', radius: 22, score: 4 },
+            { level: 2, name: '달타', file: '11.webp', color: '#FFC462', radius: 30, score: 6 },
+            { level: 3, name: '마다옴', file: '02.webp', color: '#FFF5C3', radius: 38, score: 8 },
+            { level: 4, name: '모카', file: '10.webp', color: '#5E8EFF', radius: 48, score: 10 },
+            { level: 5, name: '문모모', file: '05.webp', color: '#A868FB', radius: 58, score: 12 },
+            { level: 6, name: '임하밍', file: '04.webp', color: '#F8DBFF', radius: 70, score: 14 },
+            { level: 7, name: '카푸', file: '07.webp', color: '#FFCFB7', radius: 84, score: 16 },
+            { level: 8, name: '캬앙', file: '08.webp', color: '#FF5A4D', radius: 100, score: 18 },
+            { level: 9, name: '파니', file: '12.webp', color: '#9FC5E8', radius: 118, score: 20 },
+            { level: 10, name: '한아밍', file: '06.webp', color: '#FEC0C2', radius: 140, score: 22 },
+            { level: 11, name: '천양', file: '01.webp', color: '#43EAF6', radius: 165, score: 40 }
+        ];
+
+        const images = {};
+        const memberAudios = {}; // 커스텀 효과음을 저장할 객체
+        let loadedImages = 0;
+        
+        let mergeRecords = JSON.parse(localStorage.getItem('chunta_suika_records')) || new Array(MEMBERS_DATA.length).fill(0);
+
+        let audioCtx = null;
+        let bgm = null;
+        let isBgmMuted = false;
+        let isSfxMuted = false;
+        let bgmVolume = 0.5;
+        let sfxVolume = 0.7;
+        let gamePaused = false;
+        let currentLayout = 'pc';
+
+        function setLayoutMode(mode) {
+            currentLayout = mode;
+            const toggleBg = document.getElementById('toggleBg');
+            const btnPC = document.getElementById('btnPC');
+            const btnMobile = document.getElementById('btnMobile');
+            const layoutContainer = document.getElementById('layoutContainer');
+
+            if (mode === 'pc') {
+                toggleBg.style.left = '4px';
+                btnPC.classList.replace('text-white', 'text-gray-900');
+                btnMobile.classList.replace('text-gray-900', 'text-white');
+                layoutContainer.className = 'pc-mode transition-all duration-300';
+            } else {
+                toggleBg.style.left = 'calc(50% + 0px)';
+                btnPC.classList.replace('text-gray-900', 'text-white');
+                btnMobile.classList.replace('text-white', 'text-gray-900');
+                layoutContainer.className = 'mobile-mode transition-all duration-300';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
+            window.addEventListener('resize', handleResize);
+        });
+
+        function initAudioAndStart() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            if (!bgm) {
+                bgm = new Audio('chuntaverse.mp3');
+                bgm.loop = true;
+                bgm.volume = isBgmMuted ? 0 : bgmVolume;
+            }
+            bgm.play().catch(e => console.log('BGM Play failed:', e));
+            
+            startGame();
+        }
+
+        function playSound(type, level = 0) {
+            if (isSfxMuted) return;
+
+            // --- 1. 커스텀 멤버 효과음 처리 ---
+            // 1~3단계(index 0, 1, 2) 떨어질 때 효과음
+            if (type === 'drop' && level <= 2) {
+                if (memberAudios[level]) {
+                    const a = memberAudios[level].cloneNode();
+                    a.volume = sfxVolume;
+                    a.play().catch(e => console.log('Custom Drop audio play failed:', e));
+                }
+                return; // 기본 떨어지는 소리 생략
+            }
+            
+            // 모든 단계 합성될 때 효과음
+            if (type === 'merge' || type === 'merge_max') {
+                if (memberAudios[level]) {
+                    const a = memberAudios[level].cloneNode();
+                    a.volume = sfxVolume;
+                    a.play().catch(e => console.log('Custom Merge audio play failed:', e));
+                }
+                
+                // 최고단계가 아닐 경우, 기본 합성 소리는 생략하고 커스텀 사운드만 재생
+                if (type === 'merge') return; 
+                // merge_max(수박 완성)일 경우, 커스텀 효과음과 함께 팡파레 효과음도 추가로 재생되도록 아래 로직 진행
+            }
+
+            // --- 2. 기본 신디사이저 효과음 로직 ---
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'drop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(sfxVolume * 0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'merge_max') {
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                
+                osc.type = 'square'; osc2.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); 
+                osc.frequency.setValueAtTime(659.25, now + 0.1); 
+                osc.frequency.setValueAtTime(783.99, now + 0.2); 
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); 
+                
+                osc2.frequency.setValueAtTime(261.63, now); 
+                
+                gain.gain.setValueAtTime(sfxVolume * 0.4, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.8);
+                gain2.gain.setValueAtTime(sfxVolume * 0.6, now);
+                gain2.gain.linearRampToValueAtTime(0, now + 0.8);
+
+                osc.start(now); osc.stop(now + 0.8);
+                osc2.start(now); osc2.stop(now + 0.8);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 1.0);
+                gain.gain.setValueAtTime(sfxVolume * 0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+                osc.start(now); osc.stop(now + 1.0);
+            }
+        }
+
+        function openSettings() {
+            gamePaused = true;
+            if (runner) Runner.stop(runner); 
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            gamePaused = false;
+            if (runner && engine && document.getElementById('loadingOverlay').style.display === 'none') {
+                Runner.run(runner, engine);
+            }
+        }
+
+        function openRecords() {
+            buildRecordsList();
+            document.getElementById('recordsModal').classList.remove('hidden');
+        }
+
+        function closeRecords() {
+            document.getElementById('recordsModal').classList.add('hidden');
+        }
+
+        function buildRecordsList() {
+            const list = document.getElementById('recordsList');
+            list.innerHTML = '';
+            
+            for (let i = 1; i < MEMBERS_DATA.length; i++) {
+                const m = MEMBERS_DATA[i];
+                const count = mergeRecords[i] || 0;
+                
+                const item = document.createElement('div');
+                item.className = 'evo-item flex items-center justify-between p-2';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${baseUrl}${m.file}" class="w-12 h-12 rounded-full border-2 object-cover" style="background-color: ${m.color}; border-color: ${m.color};" crossorigin="anonymous">
+                        <span class="text-white suika-font-black text-lg">${m.name}</span>
+                    </div>
+                    <span class="text-[${m.color}] suika-font-black text-2xl px-2 drop-shadow-md">${count}회</span>
+                `;
+                list.appendChild(item);
+            }
+        }
+
+        function saveRecord(level) {
+            mergeRecords[level] = (mergeRecords[level] || 0) + 1;
+            localStorage.setItem('chunta_suika_records', JSON.stringify(mergeRecords));
+        }
+
+        function openGuide() {
+            if(currentLayout === 'pc') return; 
+            gamePaused = true;
+            if (runner) Runner.stop(runner); 
+            document.getElementById('guideModal').classList.remove('hidden');
+        }
+
+        function closeGuide() {
+            document.getElementById('guideModal').classList.add('hidden');
+            gamePaused = false;
+            if (runner && engine && document.getElementById('loadingOverlay').style.display === 'none') {
+                Runner.run(runner, engine);
+            }
+        }
+
+        function openQuitConfirm() {
+            gamePaused = true;
+            if (runner) Runner.stop(runner); 
+            document.getElementById('quitConfirmModal').classList.remove('hidden');
+        }
+
+        function closeQuitConfirm() {
+            document.getElementById('quitConfirmModal').classList.add('hidden');
+            gamePaused = false;
+            if (runner && engine) Runner.run(runner, engine);
+        }
+
+        function returnToMenu() {
+            document.getElementById('quitConfirmModal').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.remove('active');
+            
+            gamePaused = true;
+            if (runner) Runner.stop(runner);
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            
+            if(bgm) { bgm.pause(); bgm.currentTime = 0; }
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function toggleBgmMute() {
+            isBgmMuted = !isBgmMuted;
+            const btn = document.getElementById('bgmMuteBtn');
+            btn.textContent = isBgmMuted ? '🔇' : '🔊';
+            updateSettingsVolume();
+        }
+
+        function toggleSfxMute() {
+            isSfxMuted = !isSfxMuted;
+            const btn = document.getElementById('sfxMuteBtn');
+            btn.textContent = isSfxMuted ? '🔇' : '🔊';
+        }
+
+        function updateSettingsVolume() {
+            bgmVolume = document.getElementById('bgmSlider').value / 100;
+            sfxVolume = document.getElementById('sfxSlider').value / 100;
+            
+            document.getElementById('bgmVolText').textContent = Math.round(bgmVolume * 100) + '%';
+            document.getElementById('sfxVolText').textContent = Math.round(sfxVolume * 100) + '%';
+            
+            if(bgm) {
+                bgm.volume = isBgmMuted ? 0 : bgmVolume;
+            }
+        }
+
+        const Engine = Matter.Engine,
+              Render = Matter.Render,
+              Runner = Matter.Runner,
+              Bodies = Matter.Bodies,
+              World = Matter.World,
+              Events = Matter.Events,
+              Composite = Matter.Composite;
+
+        let engine, world, runner;
+        const GAME_WIDTH = 500;
+        const GAME_HEIGHT = 700;
+        const WALL_THICKNESS = 60;
+        const DEADLINE_Y = GAME_HEIGHT * 0.15;
+        let canvas, ctx, nextCanvas, nextCtx;
+        let score = 0;
+        let isGameOver = false;
+        let currentBody = null;
+        let currentLevel = 0;
+        let nextLevel = 0;
+        let mouseX = GAME_WIDTH / 2;
+        let canDrop = true;
+        let dropCooldown = 800;
+        let animFrameId = null; 
+
+        function handleResize() {
+            if (!ctx || !nextCtx) return;
+            
+            setLayoutMode(window.innerWidth > 768 ? 'pc' : 'mobile');
+            
+            const newDpr = window.devicePixelRatio || 1;
+            
+            if (canvas.width !== GAME_WIDTH * newDpr) {
+                canvas.width = GAME_WIDTH * newDpr;
+                canvas.height = GAME_HEIGHT * newDpr;
+                ctx.resetTransform();
+                ctx.scale(newDpr, newDpr);
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+            }
+
+            if (nextCanvas.width !== 120 * newDpr) {
+                nextCanvas.width = 120 * newDpr;
+                nextCanvas.height = 120 * newDpr;
+                nextCtx.resetTransform();
+                nextCtx.scale(newDpr, newDpr);
+                nextCtx.imageSmoothingEnabled = true;
+                nextCtx.imageSmoothingQuality = 'high';
+                
+                if (nextLevel !== undefined) {
+                    drawNextItem();
+                }
+            }
+        }
+
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            nextCanvas = document.getElementById('next-item-canvas');
+            nextCtx = nextCanvas.getContext('2d');
+            
+            handleResize();
+            buildEvolutionGuide();
+            preloadImages();
+        }
+
+        function preloadImages() {
+            MEMBERS_DATA.forEach((member) => {
+                // --- 이미지 프리로드 ---
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    loadedImages++;
+                    updateLoadingProgress();
+                };
+                img.onerror = () => {
+                    loadedImages++;
+                    updateLoadingProgress();
+                };
+                img.src = baseUrl + member.file;
+                images[member.level] = img;
+                
+                // --- 커스텀 효과음 프리로드 (.webp 파일명에서 .mp3로 변환하여 매칭) ---
+                const audioFile = member.file.replace('.webp', '.mp3');
+                const audio = new Audio(baseUrl + audioFile);
+                audio.preload = 'auto'; // 미리 로드하여 게임 중 렉 방지
+                memberAudios[member.level] = audio;
+            });
+        }
+
+        function updateLoadingProgress() {
+            document.getElementById('loadProgress').innerText = `${loadedImages}/${MEMBERS_DATA.length}`;
+            if (loadedImages === MEMBERS_DATA.length) {
+                document.getElementById('loadingContent').classList.add('hidden');
+                document.getElementById('startContent').classList.remove('hidden');
+                document.getElementById('startContent').classList.add('flex');
+            }
+        }
+
+        function buildEvolutionGuide() {
+            const listDesktop = document.getElementById('evoList');
+            const listModal = document.getElementById('modalEvoList');
+            
+            listDesktop.innerHTML = '';
+            listModal.innerHTML = '';
+            
+            MEMBERS_DATA.forEach((m, index) => {
+                // --- 1. PC 환경 전용 UI ---
+                let arrowHtml = '';
+                if (index === MEMBERS_DATA.length - 1) { 
+                    arrowHtml = `<div style="position: absolute; right: -5px; bottom: -5px; font-size: clamp(14px, 2vh, 24px); text-shadow: 0 0 5px rgba(0,0,0,0.8); z-index: 10;">👑</div>`;
+                }
+
+                let downArrowHtml = '';
+                if (index !== 5 && index !== 11) {
+                    downArrowHtml = `<div class="pc-evo-arrow">▼</div>`;
+                }
+
+                const pcItem = document.createElement('div');
+                pcItem.className = 'pc-evo-item';
+                pcItem.innerHTML = `
+                    <div class="pc-evo-img-box" style="border-color: ${m.color}; background-color: ${m.color};">
+                        <img src="${baseUrl}${m.file}" class="pc-evo-img" crossorigin="anonymous">
+                        <div class="pc-evo-badge" style="background-color: ${m.color};">${m.level + 1}</div>
+                        ${arrowHtml}
+                    </div>
+                    <div class="pc-evo-name suika-font">${m.name}</div>
+                    ${downArrowHtml}
+                `;
+                listDesktop.appendChild(pcItem);
+
+                // --- 2. 모바일/모달 전용 UI ---
+                let mobileArrowHtml = '';
+                if (index === MEMBERS_DATA.length - 1) { 
+                    mobileArrowHtml = `<div style="position: absolute; right: -4px; bottom: -2px; font-size: 20px; text-shadow: 0 0 5px rgba(0,0,0,0.8); z-index: 10;">👑</div>`;
+                }
+                const itemModal = document.createElement('div');
+                itemModal.className = 'mobile-evo-item';
+                itemModal.innerHTML = `
+                    <div class="mobile-evo-img-box" style="border-color: ${m.color}; background-color: ${m.color};">
+                        <img src="${baseUrl}${m.file}" class="mobile-evo-img" crossorigin="anonymous">
+                        <div class="mobile-evo-badge" style="background-color: ${m.color};">${m.level + 1}</div>
+                        ${mobileArrowHtml}
+                    </div>
+                    <div class="mobile-evo-name suika-font">${m.name}</div>
+                `;
+                listModal.appendChild(itemModal);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('gameOverOverlay').classList.remove('active');
+            
+            score = 0;
+            updateScore();
+            isGameOver = false;
+            canDrop = true;
+            gamePaused = false;
+
+            // 매 게임 시작 시 배경 이미지 랜덤 적용
+            if (BACKGROUND_IMAGES && BACKGROUND_IMAGES.length > 0) {
+                const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
+                const container = document.getElementById('game-container');
+                // 게임의 가독성을 위해 이미지 위에 반투명 어두운 레이어를 깔아줍니다.
+                container.style.backgroundImage = `linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.6)), url('${randomBg}')`;
+                container.style.backgroundSize = 'cover';
+                container.style.backgroundPosition = 'center';
+            }
+
+            if (engine) {
+                Engine.clear(engine);
+                Runner.stop(runner);
+            }
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+            }
+
+            engine = Engine.create({
+                positionIterations: 16, // 물리 연산 정밀도 증가 (과일 겹침 방지)
+                velocityIterations: 12  // 속도 연산 정밀도 증가
+            });
+            world = engine.world;
+            engine.gravity.y = 1.2; // 원작에 맞춘 자연스러운 중력(기존 1.5 -> 1.2)
+
+            // 벽면 마찰력을 0.1로 주어 과일이 벽에 달라붙지 않게 처리
+            const ground = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT + WALL_THICKNESS / 2 - 10, GAME_WIDTH * 2, WALL_THICKNESS, { isStatic: true, friction: 0.1, render: { visible: false } });
+            const leftWall = Bodies.rectangle(0 - WALL_THICKNESS / 2, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT * 2, { isStatic: true, friction: 0.1, render: { visible: false } });
+            const rightWall = Bodies.rectangle(GAME_WIDTH + WALL_THICKNESS / 2, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT * 2, { isStatic: true, friction: 0.1, render: { visible: false } });
+            
+            World.add(world, [ground, leftWall, rightWall]);
+
+            Events.on(engine, 'collisionStart', handleCollision);
+
+            runner = Runner.create();
+            Runner.run(runner, engine);
+            animFrameId = requestAnimationFrame(renderLoop);
+
+            const container = document.getElementById('game-container');
+            container.removeEventListener('mousemove', handleInputMove);
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleInputMove);
+            container.removeEventListener('mousedown', handleInputDrop);
+            container.removeEventListener('touchend', handleInputDrop);
+
+            container.addEventListener('mousemove', handleInputMove);
+            container.addEventListener('touchstart', handleTouchStart, { passive: false });
+            container.addEventListener('touchmove', handleInputMove, { passive: false });
+            container.addEventListener('mousedown', handleInputDrop);
+            container.addEventListener('touchend', handleInputDrop);
+
+            nextLevel = 0;
+            prepareNextItem();
+        }
+
+        function getRandomLevel() {
+            const rand = Math.random();
+            if (rand < 0.5) return 0;      
+            if (rand < 0.85) return 1;     
+            return 2;                      
+        }
+
+        function prepareNextItem() {
+            currentLevel = nextLevel;
+            nextLevel = getRandomLevel();
+            drawNextItem();
+            updatePreviewPosition();
+        }
+
+        function updatePreviewPosition() {
+            const r = MEMBERS_DATA[currentLevel].radius;
+            const minX = r + 5;
+            const maxX = GAME_WIDTH - r - 5;
+            let clampedX = Math.max(minX, Math.min(maxX, mouseX));
+            
+            currentBody = {
+                x: clampedX,
+                y: DEADLINE_Y - r - 10,
+                level: currentLevel,
+                radius: r
+            };
+        }
+
+        function handleInputMove(e) {
+            if (isGameOver || gamePaused) return;
+            if (e.type === 'touchmove') e.preventDefault(); 
+
+            const container = document.getElementById('game-container');
+            const rect = container.getBoundingClientRect();
+            let clientX = e.clientX;
+            if (e.type === 'touchmove') clientX = e.touches[0].clientX;
+
+            const scaleX = GAME_WIDTH / rect.width;
+            mouseX = (clientX - rect.left) * scaleX;
+            
+            if (canDrop) updatePreviewPosition();
+        }
+
+        function handleTouchStart(e) {
+            if (e.target.closest('.hud-top')) return;
+            if (isGameOver || gamePaused) return;
+            if (e.cancelable) e.preventDefault(); 
+            
+            const container = document.getElementById('game-container');
+            const rect = container.getBoundingClientRect();
+            const scaleX = GAME_WIDTH / rect.width;
+            mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+            
+            if (canDrop) updatePreviewPosition();
+        }
+
+        function handleInputDrop(e) {
+            if (e.target.closest('.hud-top')) return;
+            if (isGameOver || gamePaused || !canDrop || !currentBody) return;
+            
+            dropItem();
+        }
+
+        function dropItem() {
+            canDrop = false;
+            // 떨어지는 아이템 레벨(1~3단계 등)을 인자로 넘겨주어 소리 구분
+            playSound('drop', currentLevel);
+            
+            const body = Bodies.circle(currentBody.x, currentBody.y, currentBody.radius, {
+                restitution: 0.05,      // 통통 튀는 현상 거의 제거 (기존 0.3 -> 0.05)
+                friction: 0.005,        // 마찰력 최소화. 탑처럼 안 쌓이고 빈 공간으로 잘 굴러감
+                frictionAir: 0.01,
+                density: 0.002 * Math.pow(1.5, currentLevel), 
+                slop: 0.05,             
+                label: 'member',
+                level: currentBody.level,
+                plugin: { createdAt: Date.now() }
+            });
+            
+            World.add(world, body);
+            currentBody = null;
+
+            setTimeout(() => {
+                if (!isGameOver) {
+                    prepareNextItem();
+                    canDrop = true;
+                }
+            }, dropCooldown);
+        }
+
+        function handleCollision(event) {
+            const pairs = event.pairs;
+
+            for (let i = 0; i < pairs.length; i++) {
+                const bodyA = pairs[i].bodyA;
+                const bodyB = pairs[i].bodyB;
+
+                if (bodyA.level !== undefined && bodyB.level !== undefined && bodyA.level === bodyB.level) {
+                    if (bodyA.level === MEMBERS_DATA.length - 1) continue;
+
+                    if (bodyA.isMerging || bodyB.isMerging) continue;
+                    bodyA.isMerging = true;
+                    bodyB.isMerging = true;
+
+                    const newLevel = bodyA.level + 1;
+                    const midX = (bodyA.position.x + bodyB.position.x) / 2;
+                    const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                    World.remove(world, [bodyA, bodyB]);
+
+                    const newBody = Bodies.circle(midX, midY, MEMBERS_DATA[newLevel].radius, {
+                        restitution: 0.05,      // 통통 튀는 현상 제거
+                        friction: 0.005,        // 마찰력 최소화
+                        frictionAir: 0.01,
+                        density: 0.002 * Math.pow(1.5, newLevel),
+                        slop: 0.05,
+                        label: 'member',
+                        level: newLevel,
+                        plugin: { createdAt: Date.now() }
+                    });
+                    
+                    World.add(world, newBody);
+
+                    saveRecord(newLevel);
+
+                    addScore(MEMBERS_DATA[newLevel].score);
+                    createPopEffect(midX, midY, newLevel);
+
+                    if (newLevel === MEMBERS_DATA.length - 1) {
+                        playSound('merge_max', newLevel);
+                    } else {
+                        playSound('merge', newLevel);
+                    }
+                }
+            }
+        }
+
+        function addScore(points) {
+            score += points;
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById('scoreDisplay').innerText = score;
+        }
+
+        function createPopEffect(x, y, level) {
+            const container = document.getElementById('game-container');
+            const rect = container.getBoundingClientRect();
+            const scaleX = rect.width / GAME_WIDTH;
+            const scaleY = rect.height / GAME_HEIGHT;
+
+            const pop = document.createElement('div');
+            pop.className = 'score-popup suika-font-black';
+            pop.innerText = `+${MEMBERS_DATA[level].score}`;
+            pop.style.left = `${x * scaleX}px`;
+            pop.style.top = `${y * scaleY}px`;
+            pop.style.color = MEMBERS_DATA[level].color;
+            pop.style.fontSize = '6cqw';
+
+            container.appendChild(pop);
+            setTimeout(() => { pop.remove(); }, 1000);
+        }
+
+        function checkGameOver() {
+            if (isGameOver) return;
+
+            const bodies = Composite.allBodies(world);
+            let isOver = false;
+
+            for (let i = 0; i < bodies.length; i++) {
+                const body = bodies[i];
+                if (body.level !== undefined && !body.isStatic) {
+                    if (body.plugin && body.plugin.createdAt && Date.now() - body.plugin.createdAt > 2000) {
+                        if (body.position.y - body.circleRadius < DEADLINE_Y && Math.abs(body.velocity.y) < 0.5 && Math.abs(body.velocity.x) < 0.5) {
+                            isOver = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (isOver) {
+                isGameOver = true;
+                canDrop = false;
+                currentBody = null;
+                playSound('gameover');
+                document.getElementById('finalScore').innerText = score;
+                document.getElementById('gameOverOverlay').classList.add('active');
+            }
+        }
+
+        function renderLoop() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            if (gamePaused) {
+                animFrameId = requestAnimationFrame(renderLoop);
+                return;
+            }
+
+            const bodies = Composite.allBodies(world);
+            for (let i = 0; i < bodies.length; i++) {
+                const body = bodies[i];
+                if (body.level !== undefined) {
+                    drawMember(ctx, body.position.x, body.position.y, body.angle, body.level);
+                }
+            }
+
+            if (currentBody && !isGameOver) {
+                ctx.globalAlpha = 0.6;
+                drawMember(ctx, currentBody.x, currentBody.y, 0, currentBody.level);
+                ctx.globalAlpha = 1.0;
+
+                ctx.beginPath();
+                ctx.moveTo(currentBody.x, currentBody.y + currentBody.radius);
+                ctx.lineTo(currentBody.x, GAME_HEIGHT);
+                ctx.strokeStyle = "rgba(172, 254, 248, 0.5)";
+                ctx.setLineDash([8, 8]);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            checkGameOver();
+            animFrameId = requestAnimationFrame(renderLoop);
+        }
+
+        function drawMember(context, x, y, angle, level) {
+            const data = MEMBERS_DATA[level];
+            const r = data.radius;
+            const img = images[level];
+
+            context.save();
+            context.translate(x, y);
+            context.rotate(angle);
+
+            context.beginPath();
+            context.arc(0, 0, r, 0, 2 * Math.PI);
+            context.fillStyle = data.color;
+            context.fill();
+
+            context.save();
+            context.beginPath();
+            context.arc(0, 0, r - 0.5, 0, 2 * Math.PI);
+            context.clip();
+
+            if (img && img.complete && img.naturalWidth !== 0) {
+                context.drawImage(img, -r, -r, r * 2, r * 2);
+            } else {
+                context.fillStyle = "#000";
+                context.font = `900 ${r/2}px 'Noto Sans KR'`;
+                context.textAlign = "center";
+                context.textBaseline = "middle";
+                context.fillText(data.name.substring(0,2), 0, 0);
+            }
+            
+            context.restore(); 
+
+            context.beginPath();
+            context.arc(0, 0, r - 2, 0, 2 * Math.PI);
+            context.lineWidth = 4;
+            context.strokeStyle = data.color;
+            context.stroke();
+            
+            if(level === MEMBERS_DATA.length - 1) {
+                context.beginPath();
+                context.arc(0, 0, r + 6, 0, 2 * Math.PI);
+                context.lineWidth = 3;
+                context.strokeStyle = "#fff";
+                context.setLineDash([15, 10]);
+                context.stroke();
+                context.setLineDash([]);
+            }
+            
+            context.restore();
+        }
+
+        function drawNextItem() {
+            nextCtx.clearRect(0, 0, 120, 120);
+            const data = MEMBERS_DATA[nextLevel];
+            const displayRadius = Math.min(data.radius, 40); 
+            
+            nextCtx.save();
+            nextCtx.translate(60, 60);
+
+            nextCtx.beginPath();
+            nextCtx.arc(0, 0, displayRadius, 0, 2 * Math.PI);
+            nextCtx.fillStyle = data.color;
+            nextCtx.fill();
+
+            nextCtx.save();
+            nextCtx.beginPath();
+            nextCtx.arc(0, 0, displayRadius - 0.5, 0, 2 * Math.PI);
+            nextCtx.clip();
+
+            const img = images[nextLevel];
+            if (img && img.complete && img.naturalWidth !== 0) {
+                nextCtx.drawImage(img, -displayRadius, -displayRadius, displayRadius * 2, displayRadius * 2);
+            }
+            
+            nextCtx.restore();
+
+            nextCtx.beginPath();
+            nextCtx.arc(0, 0, displayRadius - 2, 0, 2 * Math.PI);
+            nextCtx.lineWidth = 4;
+            nextCtx.strokeStyle = data.color;
+            nextCtx.stroke();
+            
+            nextCtx.restore();
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
