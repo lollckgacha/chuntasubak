@@ -1090,7 +1090,11 @@
 
             Events.on(engine, 'collisionStart', handleCollision);
 
-            runner = Runner.create();
+            // 주사율(프레임)에 상관없이 물리 엔진 연산 속도를 60FPS 기준으로 완벽히 고정
+            runner = Runner.create({
+                isFixed: true,
+                delta: 1000 / 60
+            });
             Runner.run(runner, engine);
             animFrameId = requestAnimationFrame(renderLoop);
 
