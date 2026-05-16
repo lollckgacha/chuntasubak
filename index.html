@@ -36,7 +36,6 @@
 
         .menu-bg {
             position: fixed; inset: 0; z-index: -1;
-            /* 기존 인게임용 기본 그라데이션 배경 (게임 화면 뒤에 깔림) */
             background: radial-gradient(circle at 50% 50%, rgba(172, 254, 248, 0.15) 0%, var(--bg-dark) 80%);
         }
 
@@ -342,11 +341,12 @@
                 <span class="suika-font text-gray-300 text-lg block text-left mb-3">효과음 종류</span>
                 <div class="flex gap-2">
                     <label class="flex-1 relative">
-                        <input type="radio" name="sfxType" value="default" class="sr-only peer" checked onchange="changeSfxType('default')">
+                        <input type="radio" name="sfxType" value="default" class="sr-only peer" onchange="changeSfxType('default')">
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">기본 효과음</div>
                     </label>
                     <label class="flex-1 relative">
-                        <input type="radio" name="sfxType" value="member" class="sr-only peer" onchange="changeSfxType('member')">
+                        <!-- 멤버 효과음을 기본값(checked)으로 설정 -->
+                        <input type="radio" name="sfxType" value="member" class="sr-only peer" checked onchange="changeSfxType('member')">
                         <div class="py-2.5 border-2 border-gray-600 rounded-lg text-gray-400 font-bold peer-checked:border-[#acfef8] peer-checked:text-gray-900 peer-checked:bg-[#acfef8] cursor-pointer transition-all text-sm sm:text-base">멤버 효과음</div>
                     </label>
                 </div>
@@ -542,7 +542,8 @@
         let bgm = null;
         let isBgmMuted = false;
         let isSfxMuted = false;
-        let sfxType = 'default'; 
+        // 기본값을 'member'로 변경
+        let sfxType = 'member'; 
         let bgmVolume = 0.5;
         let sfxVolume = 0.7;
         let gamePaused = false;
@@ -612,13 +613,8 @@
         }
 
         function changeSfxType(type) {
-            if (type === 'member') {
-                openCustomAlert("아직 음원이 업데이트 되지 않아 준비 중입니다!");
-                document.querySelector('input[name="sfxType"][value="default"]').checked = true;
-                sfxType = 'default';
-            } else {
-                sfxType = 'default';
-            }
+            // 이제 알림을 띄우지 않고 자연스럽게 sfxType만 변경하도록 수정
+            sfxType = type;
         }
 
         function playSound(type, level = 0) {
@@ -897,6 +893,7 @@
 
         function preloadImages() {
             MEMBERS_DATA.forEach((member) => {
+                // 1. 이미지 로드
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.onload = () => {
@@ -910,8 +907,12 @@
                 img.src = baseUrl + member.file;
                 images[member.level] = img;
                 
+                // 2. 효과음 로드
+                // 제공된 깃허브 주소를 raw 주소로 변환하여 적용 (blob 주소는 오디오 재생이 안 됨)
                 const audioFile = member.file.replace('.jpg', '.mp3');
-                const audio = new Audio(baseUrl + audioFile);
+                const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioFile}`;
+                
+                const audio = new Audio(customAudioUrl);
                 audio.preload = 'auto'; 
                 memberAudios[member.level] = audio;
             });
