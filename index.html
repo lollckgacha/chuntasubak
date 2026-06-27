@@ -34,6 +34,12 @@
         
         * { outline: none !important; user-select: none; }
 
+        canvas {
+            /* GPU 하드웨어 가속 강제 활성화 (자글거림 방지) */
+            transform: translateZ(0);
+            image-rendering: auto;
+        }
+
         .menu-bg {
             position: fixed; inset: 0; z-index: -1;
             background: radial-gradient(circle at 50% 50%, rgba(172, 254, 248, 0.15) 0%, var(--bg-dark) 80%);
@@ -82,7 +88,6 @@
 
         /* --- 완벽한 반응형(Fluid) 레이아웃 시스템 --- */
         
-        /* 게임 컨테이너 숨김 로직 (메인 화면에서 게임 화면이 보이지 않게 차단) */
         #layoutContainer {
             opacity: 0;
             visibility: hidden;
@@ -104,13 +109,11 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         
-        /* PC모드 왼쪽 패널 (점수) */
         .pc-mode #left-panel {
             display: flex; flex-direction: column; width: clamp(140px, 16vw, 240px);
             height: 85vh; max-height: 85vh; gap: 1.5vh; flex-shrink: 0;
         }
         
-        /* PC모드 오른쪽 패널 (NEXT + 진화순서) */
         .pc-mode #ui-panel { 
             display: flex; flex-direction: column; width: clamp(160px, 16vw, 240px); 
             height: 85vh; max-height: 85vh; gap: 1.5vh; flex-shrink: 0;
@@ -126,7 +129,6 @@
         .pc-mode .mobile-title { display: none; }
         .pc-mode .mobile-helper { display: none; }
         
-        /* PC모드에서 인게임 상단 HUD 숨김 처리 */
         .pc-mode .hud-top { display: none !important; }
         
         .mobile-mode {
@@ -149,7 +151,6 @@
         .mobile-mode .mobile-helper { display: block; margin-top: 1.5vh; }
         .mobile-mode .hud-top { display: flex; }
 
-        /* --- 유동적(Fluid) 인게임 화면 컨테이너 --- */
         #game-container {
             position: relative; 
             background: rgba(18, 20, 28, 0.9);
@@ -172,7 +173,6 @@
             z-index: 10; pointer-events: none;
         }
 
-        /* --- CQW 기반 유동적 인게임 UI (모바일 전용) --- */
         .hud-top {
             position: absolute; top: 0; left: 0; right: 0; 
             padding: 4cqw;
@@ -239,7 +239,6 @@
         .score-popup { position: absolute; font-weight: 900; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 0 0 1cqw var(--theme-mint-dark), 0 0 2cqw rgba(0,0,0,0.8); z-index: 30; }
         @keyframes floatUp { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 50% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -150%) scale(1); opacity: 0; } }
 
-        /* --- PC 모드 전용 진화 순서 UI --- */
         .pc-mode .evo-title { font-size: clamp(14px, 2vh, 20px); padding: 1vh 0; flex-shrink: 0; }
         .pc-mode .evolution-guide { 
             display: grid; 
@@ -263,7 +262,6 @@
         .pc-evo-name { font-size: clamp(10px, 1.4vh, 16px); color: #d1d5db; font-weight: 700; text-align: center; margin-top: 4px; width: 100%; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
         .pc-evo-arrow { color: rgba(255,255,255,0.4); font-size: clamp(10px, 1.5vh, 18px); line-height: 1; margin-top: 2px; flex-shrink: 0; }
 
-        /* --- 모바일 모드 진화 가이드 스타일 --- */
         .mobile-mode .evolution-guide { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 12px; padding: 15px 10px; overflow-y: auto; align-content: flex-start; flex: 1; }
         .mobile-evo-item { width: 65px; display: flex; flex-direction: column; align-items: center; }
         .mobile-evo-img-box { width: 54px; height: 54px; border-radius: 50%; border: 3px solid; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -271,11 +269,10 @@
         .mobile-evo-badge { position: absolute; top: -4px; left: -4px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0a0a0f; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .mobile-evo-name { font-size: 12px; color: #d1d5db; font-weight: 700; text-align: center; margin-top: 6px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* 첫 시작 화면(홈 화면) 오버레이 배경 최적화 */
         #loadingOverlay { 
             position: fixed; inset: 0; 
             background-color: var(--bg-dark);
-            background-image: linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.8)), url('https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/chunta.jpg');
+            background-image: linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.8)), url('./chunta.jpg');
             background-size: cover;
             background-position: center;
             display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;
@@ -462,12 +459,11 @@
                     <h1 class="text-5xl text-white suika-title m-0 leading-none tracking-wider drop-shadow-md">천타버스 <span class="text-[#acfef8]">수박게임</span></h1>
                 </div>
 
-                <!-- 플레이 화면 컨테이너 (85vh 기준 완벽 보존) -->
+                <!-- 플레이 화면 컨테이너 -->
                 <div id="game-container">
                     <div class="deadline" id="deadline"></div>
                     <canvas id="gameCanvas"></canvas>
                     
-                    <!-- 모바일용 인게임 HUD (PC에서는 숨김 처리됨) -->
                     <div class="hud-top">
                         <div class="score-box">
                             <span class="text-gray-400 suika-font leading-none text-center">SCORE</span>
@@ -509,11 +505,9 @@
                 </div>
             </div>
             
-            <!-- 플레이 컨테이너와 동일한 85vh 높이를 가지는 오른쪽 UI 패널 -->
             <div id="ui-panel">
                 <button class="suika-btn w-full py-3 text-base suika-font-black mobile-only" onclick="openGuide()">📖 진화 순서 보기</button>
                 
-                <!-- PC 모드 전용 NEXT 패널 -->
                 <div class="suika-panel pc-only-flex flex-col items-center justify-center py-4 mb-2 shrink-0">
                     <span class="text-[#acfef8] suika-font-black text-xl mb-2 tracking-widest">다음</span>
                     <canvas id="next-item-canvas-pc" class="w-[8vh] h-[8vh]"></canvas>
@@ -523,7 +517,6 @@
                     <div class="text-[#acfef8] suika-font-black text-center border-b border-[rgba(255,255,255,0.1)] evo-title">
                         진화 순서
                     </div>
-                    <!-- PC 모드 전용 세로 2열 원형 그리드 진화 순서 -->
                     <div class="evolution-guide" id="evoList"></div>
                 </div>
             </div>
@@ -532,35 +525,28 @@
     </div>
 
     <script>
-        // --- 데이터 정의 ---
-        const baseUrl = 'https://raw.githubusercontent.com/Cren0p/CRD/refs/heads/main/';
+        const baseUrl = './';
         
-        // 인게임 배경 랜덤 이미지
         const BACKGROUND_IMAGES = [
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/57946a008d9623d75.png',
             'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/19866a0206651052d.png'
         ];
 
-        // 베이스 멤버 고유 속성 (섞일 데이터)
-        // [중요!] sfxCount를 늘리면 자동으로 03_1.mp3, 03_2.mp3 등 랜덤으로 불러옵니다.
-        // 현재는 모두 1개로 설정되어 있지만 나중에 언제든 원하는 멤버의 숫자를 올려주시면 됩니다.
-        // 게임 내에서 과일이 합쳐질 때마다 이 숫자 범위 내에서 매번 새롭게 무작위(랜덤)로 뽑혀서 재생됩니다.
         const BASE_MEMBERS_DATA = [
-            { name: '김웰로', file: '09.jpg', color: '#BFEF90', sfxCount: 1 },
-            { name: '나나문', file: '03.jpg', color: '#F4F6FF', sfxCount: 1 },
-            { name: '달타', file: '11.jpg', color: '#FFC462', sfxCount: 1 },
-            { name: '마다옴', file: '02.jpg', color: '#FFF5C3', sfxCount: 1 },
-            { name: '모카', file: '10.jpg', color: '#5E8EFF', sfxCount: 1 },
-            { name: '문모모', file: '05.jpg', color: '#A868FB', sfxCount: 1 },
-            { name: '임하밍', file: '04.jpg', color: '#F8DBFF', sfxCount: 1 },
-            { name: '카푸', file: '07.jpg', color: '#FFCFB7', sfxCount: 1 },
-            { name: '캬앙', file: '08.jpg', color: '#FF5A4D', sfxCount: 1 },
-            { name: '파니', file: '12.jpg', color: '#9FC5E8', sfxCount: 1 },
-            { name: '한아밍', file: '06.jpg', color: '#FEC0C2', sfxCount: 1 },
-            { name: '천양', file: '01.jpg', color: '#43EAF6', sfxCount: 1 }
+            { name: '김웰로', file: '09.webp', color: '#BFEF90', sfxCount: 1 },
+            { name: '나나문', file: '03.webp', color: '#F4F6FF', sfxCount: 1 },
+            { name: '달타', file: '11.webp', color: '#FFC462', sfxCount: 1 },
+            { name: '마다옴', file: '02.webp', color: '#FFF5C3', sfxCount: 1 },
+            { name: '모카', file: '10.webp', color: '#5E8EFF', sfxCount: 1 },
+            { name: '문모모', file: '05.webp', color: '#A868FB', sfxCount: 1 },
+            { name: '임하밍', file: '04.webp', color: '#F8DBFF', sfxCount: 1 },
+            { name: '카푸', file: '07.webp', color: '#FFCFB7', sfxCount: 1 },
+            { name: '캬앙', file: '08.webp', color: '#FF5A4D', sfxCount: 1 },
+            { name: '신규멤버1', file: 'logo2.png', color: '#ffffff', sfxCount: 1 },
+            { name: '신규멤버2', file: 'logo2.png', color: '#ffffff', sfxCount: 1 },
+            { name: '천양', file: '01.webp', color: '#43EAF6', sfxCount: 1 }
         ];
 
-        // 스테이지 공통 속성 (절대 섞이지 않고 크기/점수 역할만 함)
         const STAGE_DATA = [
             { level: 0, radius: 15, score: 2 },
             { level: 1, radius: 22, score: 4 },
@@ -576,7 +562,6 @@
             { level: 11, radius: 165, score: 40 }
         ];
 
-        // 매 게임마다 셔플되어 사용될 실제 진행 데이터 배열
         let MEMBERS_DATA = STAGE_DATA.map((stage, i) => ({
             ...stage,
             name: BASE_MEMBERS_DATA[i].name,
@@ -589,11 +574,9 @@
         const memberAudios = {}; 
         let loadedImages = 0;
         
-        // 기록을 멤버별로 정확하게 쌓기 위해 기존 기록(배열 형태 등)을 파싱합니다.
         let rawRecords = JSON.parse(localStorage.getItem('chunta_suika_records'));
         let mergeRecords = {};
         if (Array.isArray(rawRecords)) {
-            // 과거 버전(배열) 기록 연동
             rawRecords.forEach((count, i) => {
                 if (BASE_MEMBERS_DATA[i]) mergeRecords[BASE_MEMBERS_DATA[i].name] = count;
             });
@@ -614,7 +597,7 @@
         let gamePaused = false;
         let currentLayout = 'pc';
         let currentSfxAudio = null;
-        let isRenderLoopRunning = false; // 루프 중복 방지 변수
+        let isRenderLoopRunning = false; 
 
         function setLayoutMode(mode) {
             currentLayout = mode;
@@ -637,7 +620,10 @@
                 layoutContainer.classList.add('mobile-mode');
             }
             
-            handleResize();
+            // DOM이 변경되고 크기가 재설정된 이후 캔버스 리사이즈 갱신
+            setTimeout(() => {
+                if (typeof handleResize === 'function') handleResize();
+            }, 50);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -654,7 +640,7 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             if (!bgm) {
-                bgm = new Audio('chuntaverse.mp3');
+                bgm = new Audio('./chuntaverse.mp3');
                 bgm.loop = true;
                 bgm.volume = isBgmMuted ? 0 : bgmVolume;
             }
@@ -705,13 +691,12 @@
         function playSound(type, level = 0) {
             if (isSfxMuted) return;
 
-            // 1단계(가장 작은) 과일이 떨어질 때만 소리가 나게 설정
             if (type === 'drop' && level !== 0) return;
 
             const currentMemberFile = MEMBERS_DATA[level].file;
 
             if (sfxType === 'member') {
-                const audios = memberAudios[currentMemberFile]; // 다수의 랜덤 효과음 배열
+                const audios = memberAudios[currentMemberFile]; 
                 
                 if (audios && audios.length > 0) {
                     if (currentSfxAudio) {
@@ -719,12 +704,7 @@
                         currentSfxAudio.currentTime = 0;
                     }
                     
-                    // [핵심 로직] 이 함수가 실행되는 '매 순간(충돌 시점)'마다 랜덤으로 인덱스를 새롭게 뽑습니다!
                     const randomIndex = Math.floor(Math.random() * audios.length);
-                    const actionName = (type === 'drop') ? '떨어짐' : '합쳐짐';
-                    
-                    console.log(`[효과음] ${actionName}: ${MEMBERS_DATA[level].name} (총 ${audios.length}개 중 매번 새롭게 ${randomIndex + 1}번째 소리 랜덤 당첨!)`);
-                    
                     currentSfxAudio = audios[randomIndex].cloneNode();
                     currentSfxAudio.volume = sfxVolume;
                     currentSfxAudio.play().catch(e => console.log('Audio play failed:', e));
@@ -733,7 +713,6 @@
                 }
             }
 
-            // 기본 효과음 재생 로직
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -794,7 +773,7 @@
         function closeSettings() {
             document.getElementById('settingsModal').classList.add('hidden');
             gamePaused = false;
-            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
+            lastTime = performance.now(); 
         }
 
         function openRecords() {
@@ -810,7 +789,6 @@
             const list = document.getElementById('recordsList');
             list.innerHTML = '';
             
-            // 기록 창에서는 항상 기존(고정된) 멤버 순서대로 표기합니다.
             for (let i = 1; i < BASE_MEMBERS_DATA.length; i++) {
                 const m = BASE_MEMBERS_DATA[i];
                 const count = mergeRecords[m.name] || 0;
@@ -843,7 +821,7 @@
         function closeGuide() {
             document.getElementById('guideModal').classList.add('hidden');
             gamePaused = false;
-            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
+            lastTime = performance.now(); 
         }
 
         function openQuitConfirm() {
@@ -854,11 +832,10 @@
         function closeQuitConfirm() {
             document.getElementById('quitConfirmModal').classList.add('hidden');
             gamePaused = false;
-            lastTime = performance.now(); // 일시정지 해제 시 시간 보정
+            lastTime = performance.now(); 
         }
 
         function returnToMenu() {
-            // 모달 모두 닫기
             document.getElementById('quitConfirmModal').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.remove('active');
             
@@ -870,7 +847,6 @@
             
             if(bgm) { bgm.pause(); bgm.currentTime = 0; }
 
-            // 게임 화면 숨기고 홈 화면 다시 표시
             document.getElementById('layoutContainer').classList.remove('game-active');
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
@@ -907,7 +883,7 @@
               Events = Matter.Events,
               Composite = Matter.Composite;
 
-        let engine, world; // runner 제거
+        let engine, world; 
         const GAME_WIDTH = 500;
         const GAME_HEIGHT = 700;
         const WALL_THICKNESS = 60;
@@ -923,42 +899,62 @@
         let dropCooldown = 800;
         let animFrameId = null; 
         
-        // 프레임 보정 및 144Hz 등 속도 동기화용 타임 변수
         let lastTime = 0;
         let accumulator = 0;
-        const timeStep = 1000 / 60; // 초당 60프레임 고정 스텝
+        const timeStep = 1000 / 60; 
 
+        // [중요 수정] 해상도 최적화 및 계단 현상 방지 리사이즈 로직
         function handleResize() {
             if (!ctx) return;
             
             const newDpr = window.devicePixelRatio || 1;
             
-            if (canvas.width !== GAME_WIDTH * newDpr) {
-                canvas.width = GAME_WIDTH * newDpr;
-                canvas.height = GAME_HEIGHT * newDpr;
-                ctx.resetTransform();
-                ctx.scale(newDpr, newDpr);
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
+            // 1. 메인 게임 캔버스의 실제 렌더링 픽셀 크기에 맞춰 해상도를 동적으로 높입니다. (블러/깨짐 완전 방지)
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                const actualWidth = Math.round(rect.width * newDpr);
+                const actualHeight = Math.round(rect.height * newDpr);
+                
+                if (canvas.width !== actualWidth || canvas.height !== actualHeight) {
+                    canvas.width = actualWidth;
+                    canvas.height = actualHeight;
+                    
+                    // 물리엔진의 기본 좌표계(500x700)와 캔버스의 실제 화소 좌표계를 스케일링으로 맞춤
+                    const scaleX = actualWidth / GAME_WIDTH;
+                    const scaleY = actualHeight / GAME_HEIGHT;
+                    
+                    ctx.resetTransform();
+                    ctx.scale(scaleX, scaleY);
+                    
+                    // 강제 고화질 스무딩
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                }
             }
 
-            if (nextCanvas && nextCanvas.width !== 120 * newDpr) {
-                nextCanvas.width = 120 * newDpr;
-                nextCanvas.height = 120 * newDpr;
-                nextCtx.resetTransform();
-                nextCtx.scale(newDpr, newDpr);
-                nextCtx.imageSmoothingEnabled = true;
-                nextCtx.imageSmoothingQuality = 'high';
-            }
-
-            if (nextCanvasPC && nextCanvasPC.width !== 120 * newDpr) {
-                nextCanvasPC.width = 120 * newDpr;
-                nextCanvasPC.height = 120 * newDpr;
-                nextCtxPC.resetTransform();
-                nextCtxPC.scale(newDpr, newDpr);
-                nextCtxPC.imageSmoothingEnabled = true;
-                nextCtxPC.imageSmoothingQuality = 'high';
-            }
+            // 2. 넥스트 아이템 캔버스 고해상도 처리
+            [ { c: nextCanvas, ctx: nextCtx }, { c: nextCanvasPC, ctx: nextCtxPC } ].forEach(item => {
+                if (!item.c || !item.ctx) return;
+                
+                const cRect = item.c.getBoundingClientRect();
+                if (cRect.width > 0 && cRect.height > 0) {
+                    const cActualW = Math.round(cRect.width * newDpr);
+                    const cActualH = Math.round(cRect.height * newDpr);
+                    
+                    if (item.c.width !== cActualW || item.c.height !== cActualH) {
+                        item.c.width = cActualW;
+                        item.c.height = cActualH;
+                        
+                        const cScaleX = cActualW / 120; // 120은 기존 논리적 렌더링 박스 크기
+                        const cScaleY = cActualH / 120;
+                        
+                        item.ctx.resetTransform();
+                        item.ctx.scale(cScaleX, cScaleY);
+                        item.ctx.imageSmoothingEnabled = true;
+                        item.ctx.imageSmoothingQuality = 'high';
+                    }
+                }
+            });
 
             if (nextLevel !== undefined) {
                 drawNextItem();
@@ -976,7 +972,7 @@
             if (nextCanvasPC) nextCtxPC = nextCanvasPC.getContext('2d');
             
             handleResize();
-            preloadImages(); // 이미지를 모두 부른 후 진화 가이드 구축 대기
+            preloadImages(); 
 
             const pcBest = document.getElementById('pc-bestScoreDisplay');
             if(pcBest) pcBest.innerText = bestScore;
@@ -995,23 +991,20 @@
                     updateLoadingProgress();
                 };
                 img.src = baseUrl + member.file;
-                images[member.file] = img; // 고유 file 이름으로 저장
+                images[member.file] = img; 
                 
-                // 다수의 효과음을 저장할 배열 초기화
                 memberAudios[member.file] = [];
                 const sfxCount = member.sfxCount || 1;
-                const audioBaseName = member.file.replace('.jpg', '');
+                const audioBaseName = member.file.replace('.webp', '');
                 
                 if (sfxCount === 1) {
-                    // 효과음이 1개면 기존처럼 03.mp3 형식으로 불러옴
-                    const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioBaseName}.mp3`;
+                    const customAudioUrl = `./${audioBaseName}.mp3`;
                     const audio = new Audio(customAudioUrl);
                     audio.preload = 'auto'; 
                     memberAudios[member.file].push(audio);
                 } else {
-                    // 효과음이 여러 개(sfxCount: 3 등)면 03_1.mp3, 03_2.mp3 형식으로 불러옴
                     for (let k = 1; k <= sfxCount; k++) {
-                        const customAudioUrl = `https://raw.githubusercontent.com/lollckgacha/chuntasubak/main/${audioBaseName}_${k}.mp3`;
+                        const customAudioUrl = `./${audioBaseName}_${k}.mp3`;
                         const audio = new Audio(customAudioUrl);
                         audio.preload = 'auto'; 
                         memberAudios[member.file].push(audio);
@@ -1023,7 +1016,6 @@
         function updateLoadingProgress() {
             document.getElementById('loadProgress').innerText = `${loadedImages}/${BASE_MEMBERS_DATA.length}`;
             if (loadedImages === BASE_MEMBERS_DATA.length) {
-                // 첫 UI 빌드
                 buildEvolutionGuide();
                 document.getElementById('loadingContent').classList.add('hidden');
                 document.getElementById('startContent').classList.remove('hidden');
@@ -1031,7 +1023,6 @@
             }
         }
 
-        // 매 게임마다 모든 멤버(0~11단계)를 무작위 셔플
         function shuffleMembersForGame() {
             const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
             for (let i = indices.length - 1; i > 0; i--) {
@@ -1047,7 +1038,6 @@
                 MEMBERS_DATA[i].sfxCount = BASE_MEMBERS_DATA[randomIdx].sfxCount;
             }
 
-            // 셔플된 결과를 바탕으로 진화 순서 UI 재구축
             buildEvolutionGuide();
         }
 
@@ -1101,10 +1091,8 @@
         }
 
         function startGame() {
-            // 다시하기 오류 픽스: 기존 오버레이 완벽하게 제거
             document.getElementById('gameOverOverlay').classList.remove('active');
             
-            // 게임 시작 시 매판마다 순서 무작위 셔플 진행
             shuffleMembersForGame();
 
             score = 0;
@@ -1121,7 +1109,6 @@
                 container.style.backgroundPosition = 'center';
             }
 
-            // --- 엔진/월드 중복 누수 방지 및 깨끗한 리셋 ---
             if (!engine) {
                 engine = Engine.create({
                     positionIterations: 32, 
@@ -1131,7 +1118,6 @@
                 engine.gravity.y = 2.0;
                 Events.on(engine, 'collisionStart', handleCollision);
             } else {
-                // 엔진이 이미 존재하면 월드 안의 물리 오브젝트만 깨끗하게 청소
                 World.clear(world);
                 Engine.clear(engine);
                 engine.gravity.y = 2.0;
@@ -1143,11 +1129,9 @@
             
             World.add(world, [ground, leftWall, rightWall]);
 
-            // 타이머 초기화 (주사율 보정용)
             lastTime = performance.now();
             accumulator = 0;
 
-            // 렌더링 루프가 두 번 돌아서 게임이 빨라지는 현상 방지
             if (!isRenderLoopRunning) {
                 isRenderLoopRunning = true;
                 animFrameId = requestAnimationFrame(renderLoop);
@@ -1263,7 +1247,6 @@
         function handleCollision(event) {
             const pairs = event.pairs;
             
-            // 한 프레임에서 발생한 여러 병합 중 가장 높은 레벨을 추적하기 위한 변수
             let highestMergeLevelThisFrame = -1;
 
             for (let i = 0; i < pairs.length; i++) {
@@ -1301,14 +1284,12 @@
                     addScore(MEMBERS_DATA[newLevel].score);
                     createPopEffect(midX, midY, newLevel);
 
-                    // 병합된 레벨 중 가장 높은 것을 기록
                     if (newLevel > highestMergeLevelThisFrame) {
                         highestMergeLevelThisFrame = newLevel;
                     }
                 }
             }
 
-            // 프레임 처리가 모두 끝난 후, 병합된 과일이 있다면 가장 높은 단계의 소리 하나만 재생
             if (highestMergeLevelThisFrame !== -1) {
                 if (highestMergeLevelThisFrame === MEMBERS_DATA.length - 1) {
                     playSound('merge_max', highestMergeLevelThisFrame);
@@ -1389,16 +1370,19 @@
             if (!ctx) return;
             if (!time) time = performance.now();
 
-            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            // 매 프레임 안티앨리어싱 강제 할당 (서브픽셀 렌더링 시 자글거림 억제)
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // 경계선 번짐 찌꺼기를 방지하기 위해 마진을 두고 완전히 지웁니다.
+            ctx.clearRect(-10, -10, GAME_WIDTH + 20, GAME_HEIGHT + 20);
 
-            // 물리 엔진 강제 고정 주사율 동기화 로직 (144Hz, 240Hz 모니터 완벽 방어)
             if (gamePaused) {
                 lastTime = time;
             } else {
                 let deltaTime = time - lastTime;
                 lastTime = time;
                 
-                // 탭 백그라운드 전환 등으로 인한 과도한 프레임 스킵 방지
                 if (deltaTime > 200) deltaTime = 200; 
                 
                 accumulator += deltaTime;
@@ -1436,10 +1420,10 @@
             animFrameId = requestAnimationFrame(renderLoop);
         }
 
+        // [중요 수정] 클리핑 외곽선 계단현상(Aliasing) 완벽 커버 로직
         function drawMember(context, x, y, angle, level) {
             const data = MEMBERS_DATA[level];
             const r = data.radius;
-            // 셔플된 고유 파일 이름으로 이미지를 불러옵니다.
             const img = images[data.file];
 
             context.save();
@@ -1453,11 +1437,13 @@
 
             context.save();
             context.beginPath();
-            context.arc(0, 0, r - 0.5, 0, 2 * Math.PI);
+            // 클리핑 반경을 r과 완벽하게 일치시킵니다.
+            context.arc(0, 0, r, 0, 2 * Math.PI);
             context.clip();
 
             if (img && img.complete && img.naturalWidth !== 0) {
-                context.drawImage(img, -r, -r, r * 2, r * 2);
+                // 이미지가 클립 가장자리 서브픽셀 틈을 남기지 않도록 살짝(0.5px) 오버래핑하여 그립니다.
+                context.drawImage(img, -r - 0.5, -r - 0.5, r * 2 + 1, r * 2 + 1);
             } else {
                 context.fillStyle = "#000";
                 context.font = `900 ${r/2}px 'Noto Sans KR'`;
@@ -1465,12 +1451,13 @@
                 context.textBaseline = "middle";
                 context.fillText(data.name.substring(0,2), 0, 0);
             }
-            
             context.restore(); 
 
+            // 테두리(Stroke)를 그려 클리핑으로 인해 생기는 계단 현상(찌글거리는 가장자리)을 완벽하게 덮습니다.
+            // r - 1.5 지점에 3픽셀 두께로 그리면 r - 3 부터 r 까지 색상이 덮이게 됩니다.
             context.beginPath();
-            context.arc(0, 0, r - 2, 0, 2 * Math.PI);
-            context.lineWidth = 4;
+            context.arc(0, 0, r - 1.5, 0, 2 * Math.PI);
+            context.lineWidth = 3;
             context.strokeStyle = data.color;
             context.stroke();
             
@@ -1491,7 +1478,10 @@
             [nextCtx, nextCtxPC].forEach(c => {
                 if(!c) return;
                 
-                c.clearRect(0, 0, 120, 120);
+                c.imageSmoothingEnabled = true;
+                c.imageSmoothingQuality = 'high';
+                
+                c.clearRect(-10, -10, 140, 140);
                 const data = MEMBERS_DATA[nextLevel];
                 const displayRadius = Math.min(data.radius, 40); 
                 
@@ -1505,20 +1495,20 @@
 
                 c.save();
                 c.beginPath();
-                c.arc(0, 0, displayRadius - 0.5, 0, 2 * Math.PI);
+                c.arc(0, 0, displayRadius, 0, 2 * Math.PI); // 일치된 반경 클리핑
                 c.clip();
 
-                // 셔플된 고유 파일 이름으로 이미지를 불러옵니다.
                 const img = images[data.file];
                 if (img && img.complete && img.naturalWidth !== 0) {
-                    c.drawImage(img, -displayRadius, -displayRadius, displayRadius * 2, displayRadius * 2);
+                    c.drawImage(img, -displayRadius - 0.5, -displayRadius - 0.5, displayRadius * 2 + 1, displayRadius * 2 + 1);
                 }
                 
                 c.restore();
 
+                // 외곽선 덮어씌우기
                 c.beginPath();
-                c.arc(0, 0, displayRadius - 2, 0, 2 * Math.PI);
-                c.lineWidth = 4;
+                c.arc(0, 0, displayRadius - 1.5, 0, 2 * Math.PI);
+                c.lineWidth = 3;
                 c.strokeStyle = data.color;
                 c.stroke();
                 
