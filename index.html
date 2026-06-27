@@ -528,23 +528,24 @@
         const baseUrl = './';
         
         const BACKGROUND_IMAGES = [
-            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/57946a008d9623d75.png',
-            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/19866a0206651052d.png'
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/75236a3966f6cab22.png',
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/21186a39399cda8db.png',
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/22676a37f8a3ef961.png'
         ];
 
         const BASE_MEMBERS_DATA = [
-            { name: '김웰로', file: '09.webp', color: '#BFEF90', sfxCount: 1 },
-            { name: '나나문', file: '03.webp', color: '#F4F6FF', sfxCount: 1 },
-            { name: '달타', file: '11.webp', color: '#FFC462', sfxCount: 1 },
-            { name: '마다옴', file: '02.webp', color: '#FFF5C3', sfxCount: 1 },
-            { name: '모카', file: '10.webp', color: '#5E8EFF', sfxCount: 1 },
-            { name: '문모모', file: '05.webp', color: '#A868FB', sfxCount: 1 },
-            { name: '임하밍', file: '04.webp', color: '#F8DBFF', sfxCount: 1 },
-            { name: '카푸', file: '07.webp', color: '#FFCFB7', sfxCount: 1 },
-            { name: '캬앙', file: '08.webp', color: '#FF5A4D', sfxCount: 1 },
+            { name: '김웰로', file: '09.jpg', color: '#BFEF90', sfxCount: 1 },
+            { name: '나나문', file: '03.jpg', color: '#F4F6FF', sfxCount: 1 },
+            { name: '달타', file: '11.jpg', color: '#FFC462', sfxCount: 1 },
+            { name: '마다옴', file: '02.jpg', color: '#FFF5C3', sfxCount: 1 },
+            { name: '모카', file: '10.jpg', color: '#5E8EFF', sfxCount: 1 },
+            { name: '문모모', file: '05.jpg', color: '#A868FB', sfxCount: 1 },
+            { name: '임하밍', file: '04.jpg', color: '#F8DBFF', sfxCount: 1 },
+            { name: '카푸', file: '07.jpg', color: '#FFCFB7', sfxCount: 1 },
+            { name: '캬앙', file: '08.jpg', color: '#FF5A4D', sfxCount: 1 },
             { name: '신규멤버1', file: 'logo2.png', color: '#ffffff', sfxCount: 1 },
             { name: '신규멤버2', file: 'logo2.png', color: '#ffffff', sfxCount: 1 },
-            { name: '천양', file: '01.webp', color: '#43EAF6', sfxCount: 1 }
+            { name: '천양', file: '01.jpg', color: '#43EAF6', sfxCount: 1 }
         ];
 
         const STAGE_DATA = [
@@ -597,7 +598,8 @@
         let gamePaused = false;
         let currentLayout = 'pc';
         let currentSfxAudio = null;
-        let isRenderLoopRunning = false; 
+        let isRenderLoopRunning = false;
+        const circularImageCache = {};
 
         function setLayoutMode(mode) {
             currentLayout = mode;
@@ -903,6 +905,38 @@
         let accumulator = 0;
         const timeStep = 1000 / 60; 
 
+        function getCircularMemberImage(level) {
+            const data = MEMBERS_DATA[level];
+            const img = images[data.file];
+            if (!img || !img.complete || img.naturalWidth === 0) return null;
+
+            const dpr = window.devicePixelRatio || 1;
+            const r = data.radius;
+            const key = `${data.file}_${r}_${dpr}`;
+            if (circularImageCache[key]) return circularImageCache[key];
+
+            const size = Math.ceil(r * 2);
+            const pixelSize = Math.ceil(size * dpr);
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = pixelSize;
+            offCanvas.height = pixelSize;
+            const offCtx = offCanvas.getContext('2d');
+            offCtx.scale(dpr, dpr);
+            offCtx.imageSmoothingEnabled = true;
+            offCtx.imageSmoothingQuality = 'high';
+
+            offCtx.drawImage(img, 0, 0, size, size);
+
+            // clip() 대신 destination-in 사용: fill()은 안티앨리어싱되어 가장자리가 부드러움
+            offCtx.globalCompositeOperation = 'destination-in';
+            offCtx.beginPath();
+            offCtx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+            offCtx.fill();
+
+            circularImageCache[key] = offCanvas;
+            return offCanvas;
+        }
+
         // [중요 수정] 해상도 최적화 및 계단 현상 방지 리사이즈 로직
         function handleResize() {
             if (!ctx) return;
@@ -956,6 +990,9 @@
                 }
             });
 
+            // DPR 또는 사이즈 변경 시 원형 이미지 캐시 초기화
+            Object.keys(circularImageCache).forEach(k => delete circularImageCache[k]);
+
             if (nextLevel !== undefined) {
                 drawNextItem();
             }
@@ -995,7 +1032,7 @@
                 
                 memberAudios[member.file] = [];
                 const sfxCount = member.sfxCount || 1;
-                const audioBaseName = member.file.replace('.webp', '');
+                const audioBaseName = member.file.replace('.jpg', '');
                 
                 if (sfxCount === 1) {
                     const customAudioUrl = `./${audioBaseName}.mp3`;
@@ -1092,7 +1129,10 @@
 
         function startGame() {
             document.getElementById('gameOverOverlay').classList.remove('active');
-            
+
+            // 컨테이너가 visible 상태가 된 뒤 정확한 해상도로 캔버스를 재설정
+            handleResize();
+
             shuffleMembersForGame();
 
             score = 0;
@@ -1420,7 +1460,6 @@
             animFrameId = requestAnimationFrame(renderLoop);
         }
 
-        // [중요 수정] 클리핑 외곽선 계단현상(Aliasing) 완벽 커버 로직
         function drawMember(context, x, y, angle, level) {
             const data = MEMBERS_DATA[level];
             const r = data.radius;
@@ -1430,38 +1469,45 @@
             context.translate(x, y);
             context.rotate(angle);
 
+            // 배경 원
             context.beginPath();
             context.arc(0, 0, r, 0, 2 * Math.PI);
             context.fillStyle = data.color;
             context.fill();
 
-            context.save();
-            context.beginPath();
-            // 클리핑 반경을 r과 완벽하게 일치시킵니다.
-            context.arc(0, 0, r, 0, 2 * Math.PI);
-            context.clip();
-
-            if (img && img.complete && img.naturalWidth !== 0) {
-                // 이미지가 클립 가장자리 서브픽셀 틈을 남기지 않도록 살짝(0.5px) 오버래핑하여 그립니다.
+            // destination-in으로 만든 안티앨리어싱 원형 이미지 사용
+            const circImg = getCircularMemberImage(level);
+            if (circImg) {
+                context.drawImage(circImg, -r, -r, r * 2, r * 2);
+            } else if (img && img.complete && img.naturalWidth !== 0) {
+                // 캐시 미준비 시 fallback: clip 방식
+                context.save();
+                context.beginPath();
+                context.arc(0, 0, r, 0, 2 * Math.PI);
+                context.clip();
                 context.drawImage(img, -r - 0.5, -r - 0.5, r * 2 + 1, r * 2 + 1);
+                context.restore();
             } else {
+                context.save();
+                context.beginPath();
+                context.arc(0, 0, r, 0, 2 * Math.PI);
+                context.clip();
                 context.fillStyle = "#000";
                 context.font = `900 ${r/2}px 'Noto Sans KR'`;
                 context.textAlign = "center";
                 context.textBaseline = "middle";
                 context.fillText(data.name.substring(0,2), 0, 0);
+                context.restore();
             }
-            context.restore(); 
 
-            // 테두리(Stroke)를 그려 클리핑으로 인해 생기는 계단 현상(찌글거리는 가장자리)을 완벽하게 덮습니다.
-            // r - 1.5 지점에 3픽셀 두께로 그리면 r - 3 부터 r 까지 색상이 덮이게 됩니다.
+            // 가장자리 계단현상을 덮는 테두리 (멤버 색상으로)
             context.beginPath();
             context.arc(0, 0, r - 1.5, 0, 2 * Math.PI);
             context.lineWidth = 3;
             context.strokeStyle = data.color;
             context.stroke();
-            
-            if(level === MEMBERS_DATA.length - 1) {
+
+            if (level === MEMBERS_DATA.length - 1) {
                 context.beginPath();
                 context.arc(0, 0, r + 6, 0, 2 * Math.PI);
                 context.lineWidth = 3;
@@ -1470,7 +1516,7 @@
                 context.stroke();
                 context.setLineDash([]);
             }
-            
+
             context.restore();
         }
 
