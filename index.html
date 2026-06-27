@@ -543,8 +543,8 @@
             { name: '임하밍', file: '04.webp', color: '#F8DBFF', sfxCount: 1 },
             { name: '카푸', file: '07.webp', color: '#FFCFB7', sfxCount: 1 },
             { name: '캬앙', file: '08.webp', color: '#FF5A4D', sfxCount: 1 },
-            { name: '체비', file: '06.webp', color: '#e8dfee', sfxCount: 1 },
-            { name: '플리', file: '12.webp', color: '#e2f3fe', sfxCount: 1 },
+            { name: '체비', file: '06.webp', color: '#d8d6dc', sfxCount: 1 },
+            { name: '플리', file: '12.webp', color: '#b8e1f5', sfxCount: 1 },
             { name: '천양', file: '01.webp', color: '#43EAF6', sfxCount: 1 }
         ];
 
@@ -1065,18 +1065,30 @@
         }
 
         function shuffleMembersForGame() {
-            const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
+            function fisherYates(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
             }
-            
+
+            // 캬앙(idx 8), 체비(idx 9), 플리(idx 10)은 반드시 1~4번째 위치에 배정
+            const forcedFirst = [8, 9, 10];
+            const others = fisherYates([0, 1, 2, 3, 4, 5, 6, 7, 11]);
+
+            // 나머지 9명 중 1명을 뽑아 첫 4자리를 채우고, 나머지 8명은 5~12번째 위치 배정
+            const firstFour = fisherYates([...forcedFirst, others[0]]);
+            const restEight = others.slice(1);
+
+            const finalIndices = [...firstFour, ...restEight];
+
             for (let i = 0; i < 12; i++) {
-                const randomIdx = indices[i];
-                MEMBERS_DATA[i].name = BASE_MEMBERS_DATA[randomIdx].name;
-                MEMBERS_DATA[i].file = BASE_MEMBERS_DATA[randomIdx].file;
-                MEMBERS_DATA[i].color = BASE_MEMBERS_DATA[randomIdx].color;
-                MEMBERS_DATA[i].sfxCount = BASE_MEMBERS_DATA[randomIdx].sfxCount;
+                const src = BASE_MEMBERS_DATA[finalIndices[i]];
+                MEMBERS_DATA[i].name = src.name;
+                MEMBERS_DATA[i].file = src.file;
+                MEMBERS_DATA[i].color = src.color;
+                MEMBERS_DATA[i].sfxCount = src.sfxCount;
             }
 
             buildEvolutionGuide();
