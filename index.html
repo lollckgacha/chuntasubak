@@ -909,28 +909,32 @@
             const data = MEMBERS_DATA[level];
             const img = images[data.file];
             if (!img || !img.complete || img.naturalWidth === 0) return null;
+            if (!canvas || canvas.width === 0) return null;
 
-            const dpr = window.devicePixelRatio || 1;
             const r = data.radius;
-            const key = `${data.file}_${r}_${dpr}`;
+            // 오프스크린 캔버스를 화면 실제 물리 픽셀 크기에 맞춰 생성:
+            // canvas.width / GAME_WIDTH = 물리픽셀당 게임좌표 배율 (DPR 포함)
+            const physScale = canvas.width / GAME_WIDTH;
+            const physSize = Math.ceil(r * 2 * physScale);
+
+            const key = `${data.file}_${physSize}`;
             if (circularImageCache[key]) return circularImageCache[key];
 
-            const size = Math.ceil(r * 2);
-            const pixelSize = Math.ceil(size * dpr);
             const offCanvas = document.createElement('canvas');
-            offCanvas.width = pixelSize;
-            offCanvas.height = pixelSize;
+            offCanvas.width = physSize;
+            offCanvas.height = physSize;
             const offCtx = offCanvas.getContext('2d');
-            offCtx.scale(dpr, dpr);
+            // 물리픽셀 크기로 바로 그리므로 scale() 불필요
             offCtx.imageSmoothingEnabled = true;
             offCtx.imageSmoothingQuality = 'high';
 
-            offCtx.drawImage(img, 0, 0, size, size);
+            // 소스 이미지를 물리 픽셀 크기에 맞춰 직접 렌더링 (다운샘플 또는 1:1)
+            offCtx.drawImage(img, 0, 0, physSize, physSize);
 
-            // clip() 대신 destination-in 사용: fill()은 안티앨리어싱되어 가장자리가 부드러움
+            // destination-in: fill()은 AA 적용되므로 clip()보다 가장자리가 부드러움
             offCtx.globalCompositeOperation = 'destination-in';
             offCtx.beginPath();
-            offCtx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+            offCtx.arc(physSize / 2, physSize / 2, physSize / 2 - 0.5, 0, Math.PI * 2);
             offCtx.fill();
 
             circularImageCache[key] = offCanvas;
