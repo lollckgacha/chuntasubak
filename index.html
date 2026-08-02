@@ -272,7 +272,7 @@
         #loadingOverlay { 
             position: fixed; inset: 0; 
             background-color: var(--bg-dark);
-            background-image: linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.8)), url('./chunta.jpg');
+            background-image: linear-gradient(rgba(18, 20, 28, 0.6), rgba(18, 20, 28, 0.8)), url('./13chunta.jpg');
             background-size: cover;
             background-position: center;
             display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;
@@ -288,7 +288,7 @@
     <div id="loadingOverlay">
         <div id="loadingContent" class="text-center">
             <div class="spinner mx-auto mb-8"></div>
-            <p class="text-white text-2xl suika-font tracking-widest text-gray-400">에셋 로딩 중... <span id="loadProgress" class="text-white ml-2">0/12</span></p>
+            <p class="text-white text-2xl suika-font tracking-widest text-gray-400">에셋 로딩 중... <span id="loadProgress" class="text-white ml-2">0/13</span></p>
         </div>
         <div id="startContent" class="text-center hidden flex-col items-center">
             <h1 class="text-6xl sm:text-7xl text-white suika-title mb-10 drop-shadow-[0_0_20px_rgba(172,254,248,0.5)]">천타버스 <span class="text-[#acfef8] block mt-2">수박게임</span></h1>
@@ -528,10 +528,7 @@
         const baseUrl = './';
         
         const BACKGROUND_IMAGES = [
-            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/75236a3966f6cab22.png',
-            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/21186a39399cda8db.png',
-            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/22676a37f8a3ef961.png',
-            'https://stimg.sooplive.com/NORMAL_BBS/5/26490045/57186a3fb85e31c1b.png'
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/69426a6efaa33a83b.png'
         ];
 
         const BASE_MEMBERS_DATA = [
@@ -546,7 +543,8 @@
             { name: '캬앙', file: '08.webp', color: '#FF5A4D', sfxCount: 1 },
             { name: '체비', file: '06.webp', color: '#d8d6dc', sfxCount: 1 },
             { name: '플리', file: '12.webp', color: '#b8e1f5', sfxCount: 1 },
-            { name: '천양', file: '01.webp', color: '#43EAF6', sfxCount: 1 }
+            { name: '천양', file: '01.webp', color: '#43EAF6', sfxCount: 1 },
+            { name: '빙밍', file: '13.webp', color: '#30bbba', sfxCount: 1 }
         ];
 
         const STAGE_DATA = [
@@ -560,8 +558,7 @@
             { level: 7, radius: 84, score: 16 },
             { level: 8, radius: 100, score: 18 },
             { level: 9, radius: 118, score: 20 },
-            { level: 10, radius: 140, score: 22 },
-            { level: 11, radius: 165, score: 40 }
+            { level: 10, radius: 165, score: 40 }
         ];
 
         let MEMBERS_DATA = STAGE_DATA.map((stage, i) => ({
@@ -1074,17 +1071,29 @@
                 return arr;
             }
 
-            // 달타(idx 2), 캬앙(idx 8), 체비(idx 9), 플리(idx 10)은 반드시 1~5번째 위치에 배정
-            const forcedFirst = [2, 8, 9, 10];
-            const others = fisherYates([0, 1, 3, 4, 5, 6, 7, 11]);
+            // 천양(idx 11)과 빙밍(idx 12)은 항상 포함
+            // 나머지 11명(idx 0~10)에서 9명 랜덤 선택
+            const otherPool = fisherYates([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+            const shuffled9 = otherPool.slice(0, 9);
 
-            // 나머지 8명 중 1명을 뽑아 첫 5자리를 채우고, 나머지 7명은 6~12번째 위치 배정
-            const firstFive = fisherYates([...forcedFirst, others[0]]);
-            const restSeven = others.slice(1);
+            // 빙밍은 1~3단계(level 0~2) 중 랜덤 배정
+            const bingmingLevel = Math.floor(Math.random() * 3);
 
-            const finalIndices = [...firstFive, ...restSeven];
+            // 천양은 마지막 단계(level 10) 고정
+            const finalIndices = new Array(11);
+            finalIndices[10] = 11; // 천양
+            finalIndices[bingmingLevel] = 12; // 빙밍
 
-            for (let i = 0; i < 12; i++) {
+            // 나머지 9개 슬롯(level 0~9 중 빙밍 위치 제외)에 랜덤 배정
+            let slot = 0;
+            for (let i = 0; i <= 9; i++) {
+                if (i !== bingmingLevel) {
+                    finalIndices[i] = shuffled9[slot];
+                    slot++;
+                }
+            }
+
+            for (let i = 0; i < 11; i++) {
                 const src = BASE_MEMBERS_DATA[finalIndices[i]];
                 MEMBERS_DATA[i].name = src.name;
                 MEMBERS_DATA[i].file = src.file;
@@ -1109,7 +1118,7 @@
                 }
 
                 let downArrowHtml = '';
-                if (index !== 5 && index !== 11) {
+                if (index !== 5 && index !== MEMBERS_DATA.length - 1) {
                     downArrowHtml = `<div class="pc-evo-arrow">▼</div>`;
                 }
 
