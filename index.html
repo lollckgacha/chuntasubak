@@ -528,7 +528,7 @@
         const baseUrl = './';
         
         const BACKGROUND_IMAGES = [
-            'https://stimg.sooplive.com/NORMAL_BBS/5/26490045/85586a6f4c4d9e436.png'
+            'https://stimg.sooplive.com/NORMAL_BBS/3/12240993/69426a6efaa33a83b.png'
         ];
 
         const BASE_MEMBERS_DATA = [
@@ -1074,20 +1074,22 @@
             // 천양(idx 11)과 빙밍(idx 12)은 항상 포함
             // 나머지 11명(idx 0~10)에서 9명 랜덤 선택
             const otherPool = fisherYates([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-            const shuffled9 = otherPool.slice(0, 9);
+            const selected9 = otherPool.slice(0, 9);
+            const shuffled9 = fisherYates([...selected9]);
 
-            // 빙밍은 1~3단계(level 0~2) 중 랜덤 배정
-            const bingmingLevel = Math.floor(Math.random() * 3);
+            // 빙밍과 천양 모두 1~3단계(level 0~2) 내에서 서로 다른 위치에 랜덤 배정
+            const first3 = fisherYates([0, 1, 2]);
+            const bingmingLevel = first3[0];
+            const cheonnyangLevel = first3[1];
 
-            // 천양은 마지막 단계(level 10) 고정
             const finalIndices = new Array(11);
-            finalIndices[10] = 11; // 천양
-            finalIndices[bingmingLevel] = 12; // 빙밍
+            finalIndices[bingmingLevel] = 12;   // 빙밍
+            finalIndices[cheonnyangLevel] = 11; // 천양
 
-            // 나머지 9개 슬롯(level 0~9 중 빙밍 위치 제외)에 랜덤 배정
+            // 나머지 9개 슬롯에 shuffled9 배정
             let slot = 0;
-            for (let i = 0; i <= 9; i++) {
-                if (i !== bingmingLevel) {
+            for (let i = 0; i <= 10; i++) {
+                if (i !== bingmingLevel && i !== cheonnyangLevel) {
                     finalIndices[i] = shuffled9[slot];
                     slot++;
                 }
